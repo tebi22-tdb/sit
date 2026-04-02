@@ -1,0 +1,156 @@
+<div class="revision-page">
+  <app-header [showNuevoButton]="false"></app-header>
+
+  <div class="revision-contenido">
+    <!-- Izquierda: documento + detalle de la revisión elegida en el historial -->
+    <section class="revision-izquierda">
+      <div class="revision-card">
+        <h3 class="revision-seccion-titulo">Documento</h3>
+
+        <div *ngIf="cargandoDocumento" class="revision-cargando">Cargando documento…</div>
+        <div *ngIf="!cargandoDocumento && errorDocumento" class="revision-error">{{ errorDocumento }}</div>
+
+        <ng-container *ngIf="!cargandoDocumento && !errorDocumento && documentoUrlSeguro">
+          <iframe
+            *ngIf="esPDF"
+            [src]="documentoUrlSeguro"
+            class="revision-iframe-doc"
+          ></iframe>
+
+          <div *ngIf="!esPDF" class="revision-no-pdf">
+            <p class="revision-no-pdf-texto">
+              Este documento no es PDF ({{ documentoContentType }}). Descárgalo para revisarlo.
+            </p>
+            <a
+              class="revision-btn-enviar"
+              *ngIf="documentoHrefSeguro"
+              [href]="documentoHrefSeguro"
+              [attr.download]="documentoFileName"
+            >
+              Descargar documento
+            </a>
+          </div>
+        </ng-container>
+
+        <div class="revision-subir-doc">
+          <h4 class="revision-subir-titulo">Reemplazar documento</h4>
+          <p class="revision-subir-ayuda">
+            Si subes un archivo nuevo, <strong>sustituye</strong> al documento que tiene el alumno guardado. El visor se
+            actualizará al terminar.
+          </p>
+          <div class="revision-subir-fila">
+            <input
+              type="file"
+              class="revision-file-input"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              [disabled]="subiendoDocumento || !id"
+              (change)="onArchivoReemplazo($event)"
+            />
+            <span *ngIf="subiendoDocumento" class="revision-subiendo">Subiendo…</span>
+          </div>
+          <p
+            *ngIf="mensajeSubidaArchivo"
+            class="revision-mensaje-subida"
+            [class.revision-mensaje-subida--error]="errorSubidaArchivo"
+          >
+            {{ mensajeSubidaArchivo }}
+          </p>
+        </div>
+      </div>
+
+      <div class="revision-card revision-card-detalle" *ngIf="revisionSeleccionada">
+        <h3 class="revision-seccion-titulo">Revisión seleccionada</h3>
+        <div class="revision-detalle-cuerpo">
+          <div><strong>Número:</strong> {{ revisionSeleccionada.numero_revision }}</div>
+          <div><strong>Fecha:</strong> {{ revisionSeleccionada.fecha }}</div>
+          <div>
+            <strong>Resultado:</strong>
+            {{ revisionSeleccionada.resultado === 'aprobado' ? 'Aprobado' : 'Con observaciones' }}
+          </div>
+          <div *ngIf="revisionSeleccionada.observaciones">
+            <strong>Observaciones:</strong>
+            <p class="revision-detalle-obs">{{ revisionSeleccionada.observaciones }}</p>
+          </div>
+          <div *ngIf="!revisionSeleccionada.observaciones"><strong>Observaciones:</strong> —</div>
+        </div>
+      </div>
+
+      <div class="revision-card revision-card-placeholder" *ngIf="!revisionSeleccionada && !cargandoRevisiones">
+        <h3 class="revision-seccion-titulo">Revisión seleccionada</h3>
+        <p class="revision-placeholder-texto">
+          Elige una revisión del historial (columna derecha) para ver aquí el detalle.
+        </p>
+      </div>
+
+      <div class="revision-footer-acciones">
+        <button type="button" (click)="volver()" class="revision-btn-comentario revision-btn-volver">
+          Volver
+        </button>
+      </div>
+    </section>
+
+    <!-- Derecha: nueva revisión + historial -->
+    <aside class="revision-derecha">
+      <button type="button" class="revision-btn-nueva" (click)="nuevaRevisionClick()">Nueva revisión</button>
+
+      <div class="revision-card">
+        <h3 class="revision-seccion-titulo">Registrar revisión</h3>
+        <div class="revision-form-campo">
+          <label for="observaciones" class="revision-label-obs">Observaciones</label>
+          <textarea
+            id="observaciones"
+            class="revision-textarea"
+            [(ngModel)]="observacionesNueva"
+            rows="5"
+            placeholder="Escribe las observaciones para la profesora/evaluación. Si apruebas, puedes dejarlo en blanco."
+          ></textarea>
+        </div>
+
+        <div class="revision-acciones">
+          <button
+            type="button"
+            class="revision-btn-enviar"
+            [disabled]="guardando"
+            (click)="guardarRevision('observaciones')"
+          >
+            Guardar revisión
+          </button>
+          <button
+            type="button"
+            class="revision-btn-aprobar"
+            [disabled]="guardando"
+            (click)="guardarRevision('aprobado')"
+          >
+            Aprobar
+          </button>
+        </div>
+
+        <p *ngIf="mensaje" class="revision-mensaje">{{ mensaje }}</p>
+      </div>
+
+      <div class="revision-historial">
+        <h3 class="revision-historial-titulo">Historial de revisiones</h3>
+        <div *ngIf="cargandoRevisiones" class="revision-historial-cargando">Cargando…</div>
+        <ul class="revision-historial-lista" *ngIf="!cargandoRevisiones">
+          <li
+            *ngFor="let r of revisiones"
+            class="revision-historial-item"
+            [class.revision-historial-item--activo]="revisionSeleccionada?.id === r.id"
+            (click)="seleccionarRevision(r)"
+          >
+            <span class="revision-historial-icono"></span>
+            <span class="revision-historial-texto">
+              <span class="revision-historial-numero">Revisión {{ r.numero_revision }}</span>
+              <span class="revision-historial-fecha">{{ r.fecha }}</span>
+            </span>
+            <span class="revision-chevron">›</span>
+          </li>
+
+          <li *ngIf="revisiones.length === 0" class="revision-historial-vacio">
+            Aún no hay revisiones guardadas.
+          </li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>

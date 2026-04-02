@@ -1,0 +1,291 @@
+// Lo que uso de Angular para hacer las peticiones al backend
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+// URL del backend: en producción vacío (mismo servidor); en desarrollo localhost:8081
+import { environment } from '../../environments/environment';
+import { EgresadoForm } from '../core/datos';
+
+// Base de todas las rutas de egresados en el API
+const API = `${environment.apiUrl}/api/egresados`;
+
+// --- Interfaces que devuelve el backend (las defino yo para tipar las respuestas) ---
+
+// Lo que muestra cada cuadrito en la lista del panel izquierdo
+export interface EgresadoItem {
+  id: string;
+  numero_control: string;
+  nombre: string;
+  carrera: string;
+}
+
+// Archivo adjunto guardado (para mostrar en edición)
+export interface DocumentoAdjuntoDetail {
+  nombre_original?: string;
+  tamanio_bytes?: number;
+}
+
+// Lo que se muestra cuando haces clic en un egresado (detalle completo)
+export interface EgresadoDetail {
+  id: string;
+  numero_control: string;
+  datos_personales: DatosPersonalesDetail;
+  datos_proyecto: DatosProyectoDetail;
+  documentos: DocumentosDetail;
+  documento_adjunto?: DocumentoAdjuntoDetail;
+  estado_general: string;
+  fecha_creacion?: string;
+  fecha_actualizacion?: string;
+  /** Fecha en que se marcó "Enviado al departamento académico" (paso 1.1). */
+  fecha_enviado_departamento_academico?: string;
+  /** Fecha en que el departamento recibió registro y liberación (paso 2). */
+  fecha_recibido_registro_liberacion?: string;
+  fecha_confirmacion_recibidos_anexo_xxxi_xxxii?: string;
+  fecha_creacion_anexo_9_1?: string;
+  fecha_confirmacion_entrega_anexo_9_1?: string;
+  fecha_creacion_anexo_9_2?: string;
+  fecha_confirmacion_recibido_anexo_9_2?: string;
+  fecha_solicitud_sinodales?: string;
+  fecha_asignacion_sinodales?: string;
+  fecha_confirmacion_sinodales_recibidos?: string;
+  fecha_agenda_acto_9_3?: string;
+  fecha_creacion_anexo_9_3?: string;
+}
+
+// Datos personales dentro del detalle
+export interface DatosPersonalesDetail {
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  carrera: string;
+  nivel: string;
+  direccion?: string;
+  telefono?: string;
+  correo_electronico?: string;
+}
+
+// Datos del proyecto dentro del detalle
+export interface DatosProyectoDetail {
+  nombre_proyecto: string;
+  modalidad: string;
+  /** "si" o "no" - viene de la base de datos */
+  curso_titulacion?: string;
+  asesor_interno?: string;
+  asesor_externo?: string;
+  director?: string;
+  asesor_1?: string;
+  asesor_2?: string;
+}
+
+// Documentos (anexo y constancia) dentro del detalle
+export interface DocumentosDetail {
+  anexo_xxxi?: { fecha_registro?: string; estado?: string };
+  constancia_no_inconveniencia?: { fecha_expedicion?: string; estado?: string };
+}
+
+/** Item de la lista para departamento académico (Pendientes, En corrección, Aprobados, Todos). */
+export interface DepartamentoListItem {
+  id: string;
+  nombre?: string;
+  numero_control: string;
+  modalidad: string;
+  fecha_actualizacion?: string;
+  fecha_enviado_departamento_academico?: string;
+  /** "pendiente" | "con_observaciones" | "aprobado" para el badge. */
+  estado_revision?: string;
+  sinodales_asignados?: boolean;
+  fecha_solicitud_sinodales?: string;
+}
+
+/** Revisión guardada (del backend). */
+export interface RevisionApi {
+  id: string;
+  egresado_id: string;
+  numero_revision: number;
+  fecha: string;
+  revisado_por: string;
+  resultado: string;
+  observaciones?: string;
+}
+
+/** Conteos para las pestañas del departamento académico. */
+export interface DepartamentoCounts {
+  pendientes: number;
+  en_correccion: number;
+  aprobados: number;
+  todos: number;
+  sinodales_por_asignar?: number;
+}
+
+export interface AgendaActo93OcupadosResponse {
+  ocupados: string[];
+}
+
+// Servicio que usa HttpClient para hablar con el backend
+@Injectable({ providedIn: 'root' })
+export class EgresadoService {
+  constructor(private http: HttpClient) {}
+
+  // Pido la lista de egresados; filtros opcionales: numero_control, fecha_desde, fecha_hasta, tipo_filtro (anexo_xxxi | constancia)
+  listar(filtros?: { numero_control?: string; fecha_desde?: string; fecha_hasta?: string; tipo_filtro?: string }): Observable<EgresadoItem[]> {
+    let params = new HttpParams();
+    if (filtros?.numero_control?.trim()) {
+      params = params.set('numero_control', filtros.numero_control.trim());
+    }
+    if (filtros?.fecha_desde) {
+      params = params.set('fecha_desde', filtros.fecha_desde);
+    }
+    if (filtros?.fecha_hasta) {
+      params = params.set('fecha_hasta', filtros.fecha_hasta);
+    }
+    if (filtros?.tipo_filtro) {
+      params = params.set('tipo_filtro', filtros.tipo_filtro);
+    }
+    return this.http.get<EgresadoItem[]>(API, { params });
+  }
+
+  // Pido un egresado por su id (el que viene de MongoDB)
+  obtenerPorId(id: string): Observable<EgresadoDetail> {
+    return this.http.get<EgresadoDetail>(`${API}/${id}`);
+  }
+
+  // Por si el id falla, busco por número de control (respaldo)
+  obtenerPorNumeroControl(numeroControl: string): Observable<EgresadoDetail> {
+    return this.http.get<EgresadoDetail>(`${API}/por-numero/${encodeURIComponent(numeroControl)}`);
+  }
+
+  /** Seguimiento del egresado: obtiene su propio registro (requiere sesión de egresado). */
+  getMiSeguimiento(): Observable<EgresadoDetail> {
+    return this.http.get<EgresadoDetail>(`${API}/mi-seguimiento`);
+  }
+
+  // Envío los datos del formulario y el archivo en FormData (multipart) al POST del backend
+  crear(datos: EgresadoForm, archivo: File | null): Observable<unknown> {
+    const formData = new FormData();
+    formData.append('datos', new Blob([JSON.stringify(datos)], { type: 'application/json' }));
+    if (archivo) {
+      formData.append('archivo', archivo, archivo.name);
+    }
+    return this.http.post(API, formData);
+  }
+
+  eliminar(id: string): Observable<unknown> {
+    return this.http.post(`${API}/eliminar/${id}`, {});
+  }
+
+  enviarDepartamentoAcademico(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/enviar-departamento-academico`, {});
+  }
+
+  /** Conteos para pestañas (solo rol academico). */
+  getDepartamentoCounts(): Observable<DepartamentoCounts> {
+    return this.http.get<DepartamentoCounts>(`${API}/departamento/counts`);
+  }
+
+  /** Lista para departamento académico por estado: pendientes, en_correccion, aprobados, todos (solo rol academico). */
+  listarDepartamento(estado: string): Observable<DepartamentoListItem[]> {
+    return this.http.get<DepartamentoListItem[]>(`${API}/departamento`, {
+      params: { estado },
+    });
+  }
+
+  /** Lista revisiones del egresado (solo rol academico). */
+  listarRevisiones(egresadoId: string): Observable<RevisionApi[]> {
+    return this.http.get<RevisionApi[]>(`${API}/${egresadoId}/revisiones`);
+  }
+
+  /** Crea una revisión (Enviar revisión con observaciones). Solo rol academico. */
+  crearRevision(egresadoId: string, body: { resultado: string; observaciones?: string }): Observable<RevisionApi> {
+    return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones`, body);
+  }
+
+  /** Obtiene el documento adjunto del egresado (PDF/Word) para visualización. Solo rol academico. */
+  getDocumento(egresadoId: string): Observable<{ blob: Blob; contentType: string; fileName: string }> {
+    return this.http
+      .get(`${API}/${egresadoId}/documento`, { responseType: 'blob', observe: 'response' })
+      .pipe(
+        map((res) => {
+          const ct = res.headers.get('Content-Type') || 'application/octet-stream';
+          const disp = res.headers.get('Content-Disposition') || '';
+          const match = disp.match(/filename[*]?=(?:UTF-8'')?"?([^";\n]+)"?/i);
+          const fileName = match ? match[1].trim() : 'documento';
+          return { blob: res.body!, contentType: ct, fileName };
+        }),
+      );
+  }
+
+  liberar(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/liberar`, {});
+  }
+
+  confirmarRecibidosAnexosXxxiXxxii(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-recibidos-anexo-xxxi-xxxii`, {});
+  }
+
+  descargarAnexo91(id: string): Observable<Blob> {
+    return this.http.get(`${API}/${id}/anexo-9-1`, { responseType: 'blob' });
+  }
+
+  getSinodalesAcademico(
+    egresadoId: string,
+  ): Observable<{ presidente?: string; secretario?: string; vocal?: string; vocal_suplente?: string }> {
+    return this.http.get<{ presidente?: string; secretario?: string; vocal?: string; vocal_suplente?: string }>(
+      `${API}/${egresadoId}/sinodales`,
+    );
+  }
+
+  asignarSinodales(
+    egresadoId: string,
+    body: { presidente: string; secretario: string; vocal: string; vocal_suplente: string },
+  ): Observable<unknown> {
+    return this.http.post(`${API}/${egresadoId}/sinodales`, body);
+  }
+
+  reemplazarDocumentoAdjunto(id: string, archivo: File): Observable<unknown> {
+    const formData = new FormData();
+    formData.append('archivo', archivo, archivo.name);
+    return this.http.post(`${API}/${id}/documento/reemplazar`, formData);
+  }
+
+  confirmarEntregaAnexo91(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-entrega-anexo-9-1`, {});
+  }
+
+  descargarAnexo92(id: string): Observable<Blob> {
+    return this.http.get(`${API}/${id}/anexo-9-2`, { responseType: 'blob' });
+  }
+
+  confirmarRecibidoAnexo92(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-recibido-anexo-9-2`, {});
+  }
+
+  solicitarSinodales(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/solicitar-sinodales`, {});
+  }
+
+  confirmarSinodalesRecibidos(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-sinodales-recibidos`, {});
+  }
+
+  agendarActo93(id: string, fechaHora: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/agendar-acto-9-3`, { fecha_hora: fechaHora });
+  }
+
+  getAgendaActo93Ocupados(): Observable<AgendaActo93OcupadosResponse> {
+    return this.http.get<AgendaActo93OcupadosResponse>(`${API}/agenda-acto-9-3/ocupados`);
+  }
+
+  descargarAnexo93(id: string): Observable<Blob> {
+    return this.http.get(`${API}/${id}/anexo-9-3`, { responseType: 'blob' });
+  }
+
+  actualizar(id: string, datos: EgresadoForm, archivo: File | null): Observable<unknown> {
+    const formData = new FormData();
+    formData.append('datos', new Blob([JSON.stringify(datos)], { type: 'application/json' }));
+    if (archivo) {
+      formData.append('archivo', archivo, archivo.name);
+    }
+    return this.http.post(`${API}/${id}`, formData);
+  }
+}

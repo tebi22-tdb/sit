@@ -1,0 +1,105 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export const SIT_ACCESS_TOKEN_KEY = 'sit_access_token';
+
+export interface UsuarioActual {
+  username: string;
+  rol: string;
+}
+
+interface LoginResponse extends UsuarioActual {
+  access_token: string;
+}
+
+const AUTH = `${environment.apiUrl}/api/auth`;
+const API = `${environment.apiUrl}/api`;
+
+export interface CrearUsuarioBody {
+  nombre: string;
+  rol: string;
+  correo_electronico: string;
+  curp: string;
+}
+
+export interface UsuarioStaffItem {
+  id: string;
+  nombre: string;
+  username: string;
+  rol: string;
+  curp?: string;
+  correo_electronico?: string;
+  activo: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private usuario: UsuarioActual | null = null;
+
+  constructor(private http: HttpClient) {}
+
+  login(username: string, password: string): Observable<UsuarioActual> {
+    return this.http
+      .post<LoginResponse>(AUTH + '/login', { username: username.trim(), password }, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      .pipe(
+        tap((res) => {
+          sessionStorage.setItem(SIT_ACCESS_TOKEN_KEY, res.access_token);
+          this.usuario = { username: res.username, rol: res.rol };
+        }),
+        map((res) => ({ username: res.username, rol: res.rol })),
+      );
+  }
+
+  me(): Observable<UsuarioActual> {
+    const token = sessionStorage.getItem(SIT_ACCESS_TOKEN_KEY);
+    if (!token) {
+      return throwError(
+        () => new HttpErrorResponse({ status: 401, statusText: 'Sin sesión en esta pestaña' }),
+      );
+    }
+    return this.http.get<UsuarioActual>(AUTH + '/me').pipe(tap((u) => (this.usuario = u)));
+  }
+
+  logout(): Observable<unknown> {
+    return this.http.post(AUTH + '/logout', {}).pipe(
+      tap(() => {
+        this.usuario = null;
+        sessionStorage.removeItem(SIT_ACCESS_TOKEN_KEY);
+      }),
+      catchError(() => {
+        this.usuario = null;
+        sessionStorage.removeItem(SIT_ACCESS_TOKEN_KEY);
+        return of(null);
+      }),
+    );
+  }
+
+  getUsuario(): UsuarioActual | null {
+    return this.usuario;
+  }
+
+  isCoordinador(): boolean {
+    const r = this.usuario?.rol?.toLowerCase();
+    return r === 'coordinador' || r === 'apoyo_titulacion' || r === 'apoyo titulacion';
+  }
+
+  isEgresado(): boolean {
+    return this.usuario?.rol?.toLowerCase() === 'egresado';
+  }
+
+  isAcademico(): boolean {
+    return this.usuario?.rol?.toLowerCase() === 'academico';
+  }
+
+  crearUsuario(body: CrearUsuarioBody): Observable<{ ok: boolean; message?: string; error?: string }> {
+    return this.http.post<{ ok: boolean; message?: string; error?: string }>(API + '/usuarios', body);
+  }
+
+  listarUsuarios(): Observable<UsuarioStaffItem[]> {
+    return this.http.get<UsuarioStaffItem[]>(API + '/usuarios');
+  }
+}

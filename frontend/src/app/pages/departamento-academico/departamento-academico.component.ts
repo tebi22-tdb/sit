@@ -1,0 +1,239 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import { HeaderComponent } from '../../layout/header/header.component';
+import { EgresadoService, DepartamentoListItem, DepartamentoCounts } from '../../services/egresado.service';
+
+type TabEstado = 'pendientes' | 'en_correccion' | 'aprobados' | 'sinodales' | 'todos';
+@Component({
+  selector: 'app-departamento-academico',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent],
+  templateUrl: './departamento-academico.component.html',
+  styleUrl: './departamento-academico.component.css',
+})
+export class DepartamentoAcademicoComponent implements OnInit {
+  tabActivo: TabEstado = 'pendientes';
+  counts: DepartamentoCounts = { pendientes: 0, en_correccion: 0, aprobados: 0, todos: 0, sinodales_por_asignar: 0 };
+  lista: DepartamentoListItem[] = [];
+  cargando = true;
+  error = '';
+  /** ID del egresado mientras se ejecuta Liberar (evita doble clic). */
+  liberandoId: string | null = null;
+  /** Número de control para buscar (solo pestaña Todos). */
+  searchNumeroControl = '';
+  /** Filtro aplicado al hacer clic en Buscar. */
+  filtroNumeroControl = '';
+
+  /** Modal asignar sinodales */
+  sinodalesModalItem: DepartamentoListItem | null = null;
+  sinodalesPresidente = '';
+  sinodalesSecretario = '';
+  sinodalesVocal = '';
+  sinodalesVocalSuplente = '';
+  sinodalesCargando = false;
+  sinodalesGuardando = false;
+  sinodalesError = '';
+
+  constructor(
+    private egresadoService: EgresadoService,
+    private router: Router,
+  ) {}
+
+  /** Abre Revisión de documento (solo para modalidades que no son Residencia Profesional). */
+  irARevision(item: DepartamentoListItem): void {
+    if (item.modalidad === 'Residencia Profesional') return;
+    this.router.navigate(['/departamento-academico/revision', item.id]);
+  }
+
+  /** Lista a mostrar: en "Todos" filtrada por número de control si hay búsqueda. */
+  get listaVisible(): DepartamentoListItem[] {
+    if (this.tabActivo !== 'todos' || !this.filtroNumeroControl.trim()) {
+      return this.lista;
+    }
+    const term = this.filtroNumeroControl.trim().toLowerCase();
+    return this.lista.filter((item) => item.numero_control.toLowerCase().includes(term));
+  }
+
+  get mensajeListaVacia(): string {
+    if (this.tabActivo === 'todos' && this.filtroNumeroControl.trim()) {
+      return 'No se encontró ningún registro con ese número de control.';
+    }
+    if (this.tabActivo === 'sinodales') {
+      return 'No hay solicitudes de sinodales en este estado (o el egresado ya confirmó recibidos).';
+    }
+    return 'No hay registros en esta sección.';
+  }
+
+  aplicarBusqueda(): void {
+    this.filtroNumeroControl = this.searchNumeroControl.trim();
+  }
+
+  ngOnInit(): void {
+    this.cargarCounts();
+    this.cargarLista();
+  }
+
+  cargarCounts(): void {
+    this.egresadoService.getDepartamentoCounts().subscribe({
+      next: (c) => {
+        this.counts = {
+          pendientes: c.pendientes ?? 0,
+          en_correccion: c.en_correccion ?? 0,
+          aprobados: c.aprobados ?? 0,
+          todos: c.todos ?? 0,
+          sinodales_por_asignar: c.sinodales_por_asignar ?? 0,
+        };
+      },
+      error: () => {},
+    });
+  }
+
+  cargarLista(): void {
+    this.error = '';
+    this.cargando = true;
+    this.egresadoService.listarDepartamento(this.tabActivo).subscribe({
+      next: (items) => {
+        this.lista = items;
+        this.cargando = false;
+      },
+      error: () => {
+        this.error = 'No se pudo cargar la lista.';
+        this.cargando = false;
+      },
+    });
+  }
+
+  cambiarTab(tab: TabEstado): void {
+    this.tabActivo = tab;
+    this.filtroNumeroControl = '';
+    if (tab !== 'en_correccion') {
+      this.cargarLista();
+    } else {
+      this.lista = [];
+      this.cargando = false;
+    }
+  }
+
+  /** Liberar (marca recibido registro y liberación). Solo Residencia Profesional; el registro pasa a Aprobados. */
+  liberar(id: string): void {
+    this.error = '';
+    this.liberandoId = id;
+    this.egresadoService.liberar(id).subscribe({
+      next: () => {
+        this.liberandoId = null;
+        this.cargarCounts();
+        this.cargarLista();
+      },
+      error: (err: { error?: { error?: string; message?: string }; message?: string }) => {
+        this.liberandoId = null;
+        const msg = err?.error?.error ?? err?.error?.message ?? err?.message;
+        this.error = msg ? `No se pudo liberar: ${msg}` : 'No se pudo liberar. Solo aplica a Residencia Profesional.';
+      },
+    });
+  }
+
+  /** Nombre a mostrar: viene del backend; si falta o está vacío, usa número de control. */
+  nombreDisplay(item: DepartamentoListItem): string {
+    const n = item.nombre?.trim();
+    if (n) return n;
+    return `Solicitud ${item.numero_control}`;
+  }
+
+  /** Fecha en que se recibió (enviado al departamento académico): DD/MM/YYYY. */
+  fechaRecepcion(item: DepartamentoListItem): string {
+    const iso = item.fecha_enviado_departamento_academico;
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dia = d.getDate().toString().padStart(2, '0');
+    const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+    const anio = d.getFullYear();
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  /** Fecha de última modificación: DD/MM/YYYY. */
+  ultimoCambio(item: DepartamentoListItem): string {
+    const iso = item.fecha_actualizacion;
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dia = d.getDate().toString().padStart(2, '0');
+    const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+    const anio = d.getFullYear();
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  /** Fecha solicitud sinodales (ISO instant): DD/MM/YYYY HH:mm. */
+  fechaSolicitudSinodales(item: DepartamentoListItem): string {
+    const iso = item.fecha_solicitud_sinodales;
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const dia = d.getDate().toString().padStart(2, '0');
+    const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+    const anio = d.getFullYear();
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${dia}/${mes}/${anio} ${h}:${m}`;
+  }
+
+  abrirModalSinodales(item: DepartamentoListItem, ev?: Event): void {
+    ev?.stopPropagation();
+    this.sinodalesModalItem = item;
+    this.sinodalesError = '';
+    this.sinodalesPresidente = '';
+    this.sinodalesSecretario = '';
+    this.sinodalesVocal = '';
+    this.sinodalesVocalSuplente = '';
+    this.sinodalesCargando = true;
+    this.egresadoService.getSinodalesAcademico(item.id).subscribe({
+      next: (r: { presidente?: string; secretario?: string; vocal?: string; vocal_suplente?: string }) => {
+        this.sinodalesCargando = false;
+        this.sinodalesPresidente = r.presidente?.trim() ?? '';
+        this.sinodalesSecretario = r.secretario?.trim() ?? '';
+        this.sinodalesVocal = r.vocal?.trim() ?? '';
+        this.sinodalesVocalSuplente = r.vocal_suplente?.trim() ?? '';
+      },
+      error: () => {
+        this.sinodalesCargando = false;
+        this.sinodalesError = 'No se pudieron cargar los datos. Intenta de nuevo.';
+      },
+    });
+  }
+
+  cerrarModalSinodales(): void {
+    this.sinodalesModalItem = null;
+    this.sinodalesError = '';
+    this.sinodalesCargando = false;
+    this.sinodalesGuardando = false;
+  }
+
+  guardarSinodales(): void {
+    const item = this.sinodalesModalItem;
+    if (!item) return;
+    this.sinodalesGuardando = true;
+    this.sinodalesError = '';
+    this.egresadoService
+      .asignarSinodales(item.id, {
+        presidente: this.sinodalesPresidente.trim(),
+        secretario: this.sinodalesSecretario.trim(),
+        vocal: this.sinodalesVocal.trim(),
+        vocal_suplente: this.sinodalesVocalSuplente.trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.sinodalesGuardando = false;
+          this.cerrarModalSinodales();
+          this.cargarCounts();
+          this.cargarLista();
+        },
+        error: (err: { error?: { error?: string }; message?: string }) => {
+          this.sinodalesGuardando = false;
+          const msg = err?.error?.error ?? err?.message;
+          this.sinodalesError = msg ? String(msg) : 'No se pudo guardar.';
+        },
+      });
+  }
+}

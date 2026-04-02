@@ -1,0 +1,235 @@
+<div class="seguimiento-page">
+  <app-header [showNuevoButton]="false"></app-header>
+  <main class="seguimiento-main">
+    <header class="seguimiento-header">
+      <h2 class="seguimiento-titulo">Seguimiento de tu proceso de titulación</h2>
+      <p class="seguimiento-subtitulo">Revisa en qué paso está tu trámite</p>
+    </header>
+
+    <div *ngIf="cargando" class="seguimiento-cargando">Cargando seguimiento…</div>
+    <div *ngIf="error" class="seguimiento-error">{{ error }}</div>
+
+    <div *ngIf="!cargando && !error && datos" class="seguimiento-layout">
+      <div class="seguimiento-timeline-card">
+        <div class="proceso-titulo-wrap">
+          <h3 class="proceso-titulo">Proceso de Titulación</h3>
+          <div class="proceso-titulo-line" aria-hidden="true"></div>
+        </div>
+
+        <p class="seguimiento-mensaje-proceso" *ngIf="mensajeProceso">{{ mensajeProceso }}</p>
+
+        <div class="timeline">
+      <!-- Punto 1 -->
+      <div class="timeline-item"
+           [class.completado]="!!datos.fecha_enviado_departamento_academico"
+           [class.activo]="!datos.fecha_enviado_departamento_academico">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-fecha">{{ datos.fecha_enviado_departamento_academico ? formatearFechaHora(datos.fecha_enviado_departamento_academico) : '—' }}</div>
+          <div class="timeline-texto">
+            <span class="timeline-titulo-paso">
+              <svg class="timeline-icon-solicitud" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <strong>Solicitud de anexo XXXI y XXXII</strong>
+            </span>
+            <div class="timeline-sub-row" *ngIf="datos.fecha_enviado_departamento_academico">
+              <span class="timeline-check" aria-hidden="true">✓</span>
+              <div class="timeline-sub-wrap">
+                <span class="timeline-sub">Enviado al departamento académico para su registro y liberación</span>
+                <span class="timeline-fecha-sub">{{ formatearFechaHora(datos.fecha_enviado_departamento_academico) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Punto 2 -->
+      <div class="timeline-item"
+           [class.completado]="!!datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii"
+           [class.activo]="!!datos.fecha_recibido_registro_liberacion && !datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-fecha">{{ datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii ? formatearFechaHora(datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii) : '—' }}</div>
+          <div class="timeline-texto">
+            <strong>Recibidos anexo XXXI y XXXII / registro y liberación por el departamento académico</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Punto 3 -->
+      <div class="timeline-item"
+           [class.completado]="!!datos.fecha_creacion_anexo_9_1"
+           [class.activo]="!!datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii && !datos.fecha_creacion_anexo_9_1">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-fecha">{{ datos.fecha_creacion_anexo_9_1 ? formatearFechaHora(datos.fecha_creacion_anexo_9_1) : '—' }}</div>
+          <div class="timeline-texto">
+            <strong>Crear anexo 9.1</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Residencia: pasos siguientes -->
+      <ng-container *ngIf="esResidenciaProfesional">
+        <!-- 4 Entrega 9.1 -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_confirmacion_entrega_anexo_9_1"
+             [class.activo]="!!datos.fecha_creacion_anexo_9_1 && !datos.fecha_confirmacion_entrega_anexo_9_1">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_confirmacion_entrega_anexo_9_1 ? formatearFechaHora(datos.fecha_confirmacion_entrega_anexo_9_1) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Entrega de anexo 9.1</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_creacion_anexo_9_1 && !datos.fecha_confirmacion_entrega_anexo_9_1">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="confirmarEntrega91()">Confirmar entrega</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 Crear 9.2 -->
+        <div class="timeline-item"
+             [class.completado]="!!(datos.fecha_creacion_anexo_9_2 || datos.fecha_confirmacion_recibido_anexo_9_2)"
+             [class.activo]="!!datos.fecha_confirmacion_entrega_anexo_9_1 && !datos.fecha_creacion_anexo_9_2 && !datos.fecha_confirmacion_recibido_anexo_9_2">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_creacion_anexo_9_2 ? formatearFechaHora(datos.fecha_creacion_anexo_9_2) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Crear 9.2</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_confirmacion_entrega_anexo_9_1 && !datos.fecha_creacion_anexo_9_2 && !datos.fecha_confirmacion_recibido_anexo_9_2">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="descargar92()">Crear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6 Recibido 9.2 -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_confirmacion_recibido_anexo_9_2"
+             [class.activo]="!!datos.fecha_creacion_anexo_9_2 && !datos.fecha_confirmacion_recibido_anexo_9_2">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_confirmacion_recibido_anexo_9_2 ? formatearFechaHora(datos.fecha_confirmacion_recibido_anexo_9_2) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Recibido 9.2</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_creacion_anexo_9_2 && !datos.fecha_confirmacion_recibido_anexo_9_2">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="confirmarRecibido92()">Confirmar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7 Solicitar sinodales -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_solicitud_sinodales"
+             [class.activo]="!!datos.fecha_confirmacion_recibido_anexo_9_2 && !datos.fecha_solicitud_sinodales">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_solicitud_sinodales ? formatearFechaHora(datos.fecha_solicitud_sinodales) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Solicitud de sinodales</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_confirmacion_recibido_anexo_9_2 && !datos.fecha_solicitud_sinodales">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="solicitarSinodales()">Solicitar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8 Recibimos sinodales (Confirmar solo tras asignación en departamento académico) -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_confirmacion_sinodales_recibidos"
+             [class.activo]="!!datos.fecha_solicitud_sinodales && !datos.fecha_confirmacion_sinodales_recibidos">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_confirmacion_sinodales_recibidos ? formatearFechaHora(datos.fecha_confirmacion_sinodales_recibidos) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Recibimos sinodales</strong>
+              <p class="timeline-espera" *ngIf="datos.fecha_solicitud_sinodales && !datos.fecha_asignacion_sinodales && !datos.fecha_confirmacion_sinodales_recibidos">
+                Esperando que el departamento académico asigne el jurado…
+              </p>
+              <div class="timeline-acciones" *ngIf="datos.fecha_solicitud_sinodales && datos.fecha_asignacion_sinodales && !datos.fecha_confirmacion_sinodales_recibidos">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="confirmarSinodalesRecibidos()">Confirmar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8 Agendar 9.3 -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_agenda_acto_9_3"
+             [class.activo]="!!datos.fecha_confirmacion_sinodales_recibidos && !datos.fecha_agenda_acto_9_3">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_agenda_acto_9_3 ? formatearFechaHora(datos.fecha_agenda_acto_9_3) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Agendar 9.3</strong>
+              <div class="timeline-agendar" *ngIf="datos.fecha_confirmacion_sinodales_recibidos && !datos.fecha_agenda_acto_9_3">
+                <label class="timeline-label-fecha" for="fecha-acto-93">Fecha y hora del acto</label>
+                <input #inpAgenda type="datetime-local" id="fecha-acto-93" class="input-datetime-local" />
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="agendarActo93(inpAgenda.value)">Agendar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10 Crear / descargar 9.3 -->
+        <div class="timeline-item"
+             [class.completado]="!!datos.fecha_creacion_anexo_9_3"
+             [class.activo]="!!datos.fecha_agenda_acto_9_3 && !datos.fecha_creacion_anexo_9_3">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ datos.fecha_creacion_anexo_9_3 ? formatearFechaHora(datos.fecha_creacion_anexo_9_3) : '—' }}</div>
+            <div class="timeline-texto">
+              <strong>Crear 9.3</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_agenda_acto_9_3 && !datos.fecha_creacion_anexo_9_3">
+                <button type="button" class="btn-seguimiento" [disabled]="procesando" (click)="descargar93()">Crear y descargar 9.3</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10 Finalizado -->
+        <div class="timeline-item completado" *ngIf="datos.fecha_creacion_anexo_9_3">
+          <div class="timeline-marker"></div>
+          <div class="timeline-content">
+            <div class="timeline-fecha">{{ formatearFechaHora(datos.fecha_creacion_anexo_9_3) }}</div>
+            <div class="timeline-texto">
+              <strong>Proceso finalizado</strong>
+              <div class="timeline-acciones" *ngIf="datos.fecha_creacion_anexo_9_3">
+                <button type="button" class="btn-seguimiento btn-seguimiento-sec" [disabled]="procesando" (click)="descargar93()">Volver a descargar 9.3</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+        </div>
+      </div>
+
+      <aside class="seguimiento-aside">
+        <div class="seguimiento-card">
+          <h3 class="seguimiento-card-titulo">Estado actual</h3>
+          <p class="seguimiento-estado" *ngIf="datos.fecha_creacion_anexo_9_3">Proceso finalizado (9.3 generado).</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_creacion_anexo_9_3 && datos.fecha_agenda_acto_9_3">Acto agendado; pendiente descargar 9.3.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_agenda_acto_9_3 && datos.fecha_confirmacion_sinodales_recibidos">Sinodales confirmados; agenda el acto 9.3.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_confirmacion_sinodales_recibidos && datos.fecha_solicitud_sinodales && !datos.fecha_asignacion_sinodales">Sinodales solicitados; pendiente asignación del departamento.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_confirmacion_sinodales_recibidos && datos.fecha_solicitud_sinodales && datos.fecha_asignacion_sinodales">Jurado asignado; confirma que recibiste los sinodales.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_solicitud_sinodales && datos.fecha_confirmacion_recibido_anexo_9_2">Constancia 9.2 recibida.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_confirmacion_recibido_anexo_9_2 && datos.fecha_confirmacion_entrega_anexo_9_1">Entrega 9.1 confirmada.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_confirmacion_entrega_anexo_9_1 && datos.fecha_creacion_anexo_9_1">Anexo 9.1 listo; confirma la entrega.</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_creacion_anexo_9_1 && datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii">Confirmado (pendiente crear 9.1 en división).</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_confirmacion_recibidos_anexo_xxxi_xxxii && datos.fecha_recibido_registro_liberacion">Liberado (pendiente confirmar).</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_recibido_registro_liberacion && datos.fecha_enviado_departamento_academico">Enviado al departamento académico</p>
+          <p class="seguimiento-estado" *ngIf="!datos.fecha_enviado_departamento_academico">Solicitud registrada</p>
+        </div>
+        <div class="seguimiento-card seguimiento-card-ayuda">
+          <p class="seguimiento-ayuda-texto">Los documentos 9.2 y 9.3 se generan desde las plantillas oficiales (requiere LibreOffice en el servidor).</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>

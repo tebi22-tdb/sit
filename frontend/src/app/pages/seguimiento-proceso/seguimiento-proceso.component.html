@@ -1,0 +1,127 @@
+<div class="seg-page">
+  <app-header [showNuevoButton]="false" [showAgregarUsuarioButton]="false"></app-header>
+
+  <main class="seg-main">
+    <h1 class="seg-titulo">Seguimiento</h1>
+
+    <section class="seg-kpis">
+      <button type="button" class="kpi kpi-exp" [class.kpi-activo]="esEstadoActivo('todos')" (click)="seleccionarEstado('todos')"><span>Expedientes</span><strong>{{ totalExpedientes }}</strong></button>
+      <button type="button" class="kpi kpi-ok" [class.kpi-activo]="esEstadoActivo('en_tiempo')" (click)="seleccionarEstado('en_tiempo')"><span>En tiempo</span><strong>{{ totalEnTiempo }}</strong></button>
+      <button type="button" class="kpi kpi-mid" [class.kpi-activo]="esEstadoActivo('rezagado')" (click)="seleccionarEstado('rezagado')"><span>Rezagado</span><strong>{{ totalRezagado }}</strong></button>
+      <button type="button" class="kpi kpi-bad" [class.kpi-activo]="esEstadoActivo('vencido')" (click)="seleccionarEstado('vencido')"><span>Vencidos</span><strong>{{ totalVencidos }}</strong></button>
+    </section>
+
+    <section class="seg-filtros">
+      <input type="text" [(ngModel)]="buscarControl" placeholder="Ingrese número de control" />
+      <select [(ngModel)]="filtroCarrera">
+        <option value="">Carrera (todas)</option>
+        <option *ngFor="let c of carrerasDisponibles" [value]="c">{{ c }}</option>
+      </select>
+      <select [(ngModel)]="filtroEstado">
+        <option value="todos">Estado (todos)</option>
+        <option value="en_tiempo">En tiempo</option>
+        <option value="rezagado">Rezagado</option>
+        <option value="vencido">Vencido</option>
+      </select>
+      <button type="button" class="btn-mas-filtros" (click)="mostrarMasFiltros = !mostrarMasFiltros">
+        {{ mostrarMasFiltros ? 'Ocultar filtros' : 'Más filtros' }}
+      </button>
+      <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">Limpiar filtros</button>
+    </section>
+
+    <section class="seg-filtros seg-filtros-sec" *ngIf="mostrarMasFiltros">
+      <select [(ngModel)]="filtroProducto">
+        <option value="">Producto (todos)</option>
+        <option *ngFor="let p of productosDisponibles" [value]="p">{{ p }}</option>
+      </select>
+      <select [(ngModel)]="filtroDocumento">
+        <option value="todos">Documento faltante (todos)</option>
+        <option value="Sin atraso">Sin atraso</option>
+        <option value="Anexo XXXII">Anexo XXXII</option>
+        <option value="Acto protocolario">Acto protocolario</option>
+        <option value="Sinodales">Sinodales</option>
+      </select>
+      <select [(ngModel)]="ordenarPor">
+        <option value="prioridad">Ordenar por: Prioridad</option>
+        <option value="nombre">Ordenar por: Nombre</option>
+        <option value="control">Ordenar por: No control</option>
+      </select>
+    </section>
+
+    <div *ngIf="cargando" class="seg-msg">Cargando seguimiento...</div>
+    <div *ngIf="error" class="seg-msg seg-err">{{ error }}</div>
+
+    <section *ngIf="!cargando && !error" class="seg-bloques">
+      <div class="seg-tabla-wrap">
+        <table class="seg-tabla">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>No control</th>
+              <th>Carrera</th>
+              <th>Estado</th>
+              <th>Documento faltante</th>
+              <th>Último mov.</th>
+              <th>Fecha límite</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of itemsFiltrados" class="seg-fila-click" [class.seg-fila-activa]="detalleSeleccionado?.id === item.id" (click)="seleccionarEgresado(item)">
+              <td>{{ item.alumno }}</td>
+              <td>{{ item.noControl }}</td>
+              <td>{{ item.carrera }}</td>
+              <td><span class="badge" [class.badge-ok]="item.estado === 'en_tiempo'" [class.badge-mid]="item.estado === 'rezagado'" [class.badge-bad]="item.estado === 'vencido'">{{ badgeEstado(item.estado) }}</span></td>
+              <td>{{ item.documentoFaltante }}</td>
+              <td>{{ item.ultimoMovimiento }}</td>
+              <td>{{ item.fechaLimite }}</td>
+            </tr>
+            <tr *ngIf="itemsFiltrados.length === 0">
+              <td colspan="7" class="seg-vacio">No hay resultados con esos filtros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="seg-proceso">
+        <h3>Proceso de Titulación</h3>
+        <p *ngIf="mensajeProceso" class="seg-msg">{{ mensajeProceso }}</p>
+        <p *ngIf="cargandoDetalle" class="seg-msg">Cargando detalle del egresado...</p>
+        <p *ngIf="!cargandoDetalle && !detalleSeleccionado" class="seg-msg">Selecciona un egresado en la tabla para ver su proceso.</p>
+        <div *ngIf="!cargandoDetalle && detalleSeleccionado" class="seg-proceso-lista">
+          <div
+            class="seg-proceso-item"
+            *ngFor="let paso of pasosProcesoTitulacion"
+            [class.seg-proceso-item-curso]="paso.estado === 'en_curso'"
+            [class.seg-proceso-item-ok]="paso.estado === 'completado'"
+          >
+            <div class="seg-proceso-top">
+              <span class="seg-proceso-num">{{ paso.numero }}</span>
+              <strong>{{ paso.titulo }}</strong>
+              <span class="seg-proceso-chip" [class.seg-proceso-chip-ok]="paso.estado === 'completado'" [class.seg-proceso-chip-curso]="paso.estado === 'en_curso'" [class.seg-proceso-chip-pendiente]="paso.estado === 'pendiente'">
+                {{ etiquetaEstadoPaso(paso.estado) }}
+              </span>
+            </div>
+            <div class="seg-proceso-fecha" *ngIf="paso.fecha">{{ formatearFechaHora(paso.fecha) }}</div>
+            <p class="seg-proceso-desc">{{ paso.descripcion }}</p>
+            <div class="seg-proceso-acciones" *ngIf="detalleSeleccionado">
+              <button *ngIf="paso.numero === 1 && !detalleSeleccionado.fecha_enviado_departamento_academico" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="enviarDepartamento()">Enviar</button>
+              <button *ngIf="paso.numero === 2 && detalleSeleccionado.fecha_recibido_registro_liberacion && !detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibidosAnexos()">Confirmar</button>
+              <button *ngIf="paso.numero === 3 && detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii && !detalleSeleccionado.fecha_creacion_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar91()">Crear 9.1</button>
+              <button *ngIf="paso.numero === 4 && detalleSeleccionado.fecha_creacion_anexo_9_1 && !detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarEntrega91()">Confirmar entrega</button>
+              <button *ngIf="paso.numero === 5 && detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1 && !detalleSeleccionado.fecha_creacion_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar92()">Crear 9.2</button>
+              <button *ngIf="paso.numero === 6 && detalleSeleccionado.fecha_creacion_anexo_9_2 && !detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibido92()">Confirmar</button>
+              <button *ngIf="paso.numero === 7 && detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2 && !detalleSeleccionado.fecha_solicitud_sinodales" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="solicitarSinodales()">Solicitar</button>
+              <button *ngIf="paso.numero === 8 && detalleSeleccionado.fecha_asignacion_sinodales && !detalleSeleccionado.fecha_confirmacion_sinodales_recibidos" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarSinodalesRecibidos()">Confirmar</button>
+              <div *ngIf="paso.numero === 9 && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-wrap">
+                <input #fechaActo type="datetime-local" class="seg-input-dt" />
+                <button type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="agendarActo93(fechaActo.value)">Agendar</button>
+              </div>
+              <button *ngIf="paso.numero === 10 && detalleSeleccionado.fecha_agenda_acto_9_3 && !detalleSeleccionado.fecha_creacion_anexo_9_3" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar93()">Crear 9.3</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+</div>
+
