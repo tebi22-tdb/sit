@@ -18,6 +18,11 @@ export interface EgresadoItem {
   numero_control: string;
   nombre: string;
   carrera: string;
+  modalidad?: string;
+  fecha_creacion?: string;
+  fecha_enviado_departamento_academico?: string;
+  fecha_actualizacion?: string;
+  fecha_creacion_anexo_9_3?: string;
 }
 
 // Archivo adjunto guardado (para mostrar en edición)
@@ -44,6 +49,8 @@ export interface EgresadoDetail {
   fecha_confirmacion_recibidos_anexo_xxxi_xxxii?: string;
   fecha_creacion_anexo_9_1?: string;
   fecha_confirmacion_entrega_anexo_9_1?: string;
+  /** Cuando división solicita al egresado tramitar la constancia 9.2. */
+  fecha_solicitud_anexo_9_2?: string;
   fecha_creacion_anexo_9_2?: string;
   fecha_confirmacion_recibido_anexo_9_2?: string;
   fecha_solicitud_sinodales?: string;
@@ -122,6 +129,14 @@ export interface AgendaActo93OcupadosResponse {
   ocupados: string[];
 }
 
+/** Respuesta del POST al crear egresado (incluye aviso sobre correo de credenciales). */
+export interface EgresadoCrearResponse {
+  id: string;
+  numero_control: string;
+  credenciales_enviadas_correo?: boolean | null;
+  aviso_credenciales?: string | null;
+}
+
 // Servicio que usa HttpClient para hablar con el backend
 @Injectable({ providedIn: 'root' })
 export class EgresadoService {
@@ -161,13 +176,13 @@ export class EgresadoService {
   }
 
   // Envío los datos del formulario y el archivo en FormData (multipart) al POST del backend
-  crear(datos: EgresadoForm, archivo: File | null): Observable<unknown> {
+  crear(datos: EgresadoForm, archivo: File | null): Observable<EgresadoCrearResponse> {
     const formData = new FormData();
     formData.append('datos', new Blob([JSON.stringify(datos)], { type: 'application/json' }));
     if (archivo) {
       formData.append('archivo', archivo, archivo.name);
     }
-    return this.http.post(API, formData);
+    return this.http.post<EgresadoCrearResponse>(API, formData);
   }
 
   eliminar(id: string): Observable<unknown> {
@@ -250,6 +265,10 @@ export class EgresadoService {
 
   confirmarEntregaAnexo91(id: string): Observable<unknown> {
     return this.http.post(`${API}/${id}/confirmar-entrega-anexo-9-1`, {});
+  }
+
+  solicitarConstancia92Division(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/solicitar-constancia-9-2-division`, {});
   }
 
   descargarAnexo92(id: string): Observable<Blob> {

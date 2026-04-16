@@ -28,6 +28,8 @@ data class Egresado(
     @Field("fecha_creacion_anexo_9_1") val fechaCreacionAnexo91: Instant? = null,
     /** Egresado confirma entrega del anexo 9.1 al departamento. */
     @Field("fecha_confirmacion_entrega_anexo_9_1") val fechaConfirmacionEntregaAnexo91: Instant? = null,
+    /** División solicita al egresado que tramite/descargue la constancia 9.2 (antes de generar el PDF). */
+    @Field("fecha_solicitud_anexo_9_2") val fechaSolicitudAnexo92: Instant? = null,
     /** Generación/descarga de constancia 9.2 desde plantilla (antes de confirmar recibido). */
     @Field("fecha_creacion_anexo_9_2") val fechaCreacionAnexo92: Instant? = null,
     /** Egresado confirma recibido constancia 9.2. */

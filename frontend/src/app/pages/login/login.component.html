@@ -5,8 +5,9 @@
         <img src="assets/images/logo-tecnm.png" alt="TecNM" class="login-logo" />
         <img src="assets/images/logo-itvo.png" alt="ITVO" class="login-logo" />
       </div>
+      <p class="login-kicker">Acceso institucional</p>
       <h1 class="login-titulo">SITVO</h1>
-      <p class="login-subtitulo">Sistema Integral de Titulacion del valle de oaxaca</p>
+      <p class="login-subtitulo">Sistema Integral de Titulación del Valle de Oaxaca</p>
     </aside>
     <div class="login-card">
       <form (ngSubmit)="onSubmit()" class="login-form">
@@ -33,6 +34,7 @@
         <button type="submit" class="btn-login" [disabled]="loading">
           {{ loading ? 'Entrando...' : 'Entrar' }}
         </button>
+        <p class="login-ayuda">Si no recuerdas tu acceso, contacta al área administrativa.</p>
       </form>
     </div>
   </div>

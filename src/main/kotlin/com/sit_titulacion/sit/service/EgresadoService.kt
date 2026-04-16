@@ -35,7 +35,13 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -43,6 +49,7 @@ import java.time.ZoneId
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.ZoneOffset
+import java.util.Locale
 import java.time.format.DateTimeParseException
 import java.time.format.DateTimeFormatter
 
@@ -57,6 +64,8 @@ class EgresadoService(
     private val egresadoRepository: EgresadoRepository,
     private val gridFsTemplate: GridFsTemplate,
     private val env: Environment,
+    private val htmlAnexoPdfService: HtmlAnexoPdfService,
+    private val revisionService: RevisionService,
 ) {
     private val log = LoggerFactory.getLogger(EgresadoService::class.java)
 
@@ -211,6 +220,7 @@ class EgresadoService(
                 .sortedByDescending { it.id }
         }
         log.info("listarParaLista: encontrados {} egresados en DB", lista.size)
+        val formatter = DateTimeFormatter.ISO_INSTANT
         return lista.map { e ->
             val p = e.datos_personales
             val nombreCompleto = listOf(p.nombre, p.apellido_paterno, p.apellido_materno)
@@ -223,6 +233,11 @@ class EgresadoService(
                 numero_control = e.numero_control,
                 nombre = nombreCompleto,
                 carrera = carrera,
+                modalidad = e.datos_proyecto.modalidad.ifBlank { "—" },
+                fecha_creacion = formatter.format(e.fechaCreacion),
+                fecha_enviado_departamento_academico = e.fechaEnviadoDepartamentoAcademico?.let { formatter.format(it) },
+                fecha_actualizacion = formatter.format(e.fecha_actualizacion),
+                fecha_creacion_anexo_9_3 = e.fechaCreacionAnexo93?.let { formatter.format(it) },
             )
         }
     }
@@ -239,12 +254,22 @@ class EgresadoService(
 
     fun contarParaDepartamento(): Map<String, Int> {
         val all = egresadoRepository.findAll()
-        val pendientes = all.count { it.fechaEnviadoDepartamentoAcademico != null && it.fechaRecibidoRegistroLiberacion == null }
+        val pendientes = all.count {
+            it.fechaEnviadoDepartamentoAcademico != null &&
+                it.fechaRecibidoRegistroLiberacion == null &&
+                !enCorreccionAcademico(it)
+        }
+        val enCorreccion = all.count {
+            it.fechaEnviadoDepartamentoAcademico != null &&
+                it.fechaRecibidoRegistroLiberacion == null &&
+                enCorreccionAcademico(it)
+        }
         val aprobados = all.count { it.fechaRecibidoRegistroLiberacion != null }
         val todos = all.count { it.fechaEnviadoDepartamentoAcademico != null }
         val sinodales = all.count { it.fechaSolicitudSinodales != null && it.fechaConfirmacionSinodalesRecibidos == null }
         return mapOf(
             "pendientes" to pendientes,
+            "en_correccion" to enCorreccion,
             "aprobados" to aprobados,
             "todos" to todos,
             "sinodales_por_asignar" to sinodales,
@@ -253,11 +278,21 @@ class EgresadoService(
 
     fun listarParaDepartamento(estado: String): List<DepartamentoListItemDto> {
         val all = egresadoRepository.findAll()
-        val lista = when (estado.trim().lowercase()) {
+        val norm = estado.trim().lowercase()
+        val lista = when (norm) {
             "aprobados" -> all.filter { it.fechaRecibidoRegistroLiberacion != null }
             "sinodales" -> all.filter { it.fechaSolicitudSinodales != null && it.fechaConfirmacionSinodalesRecibidos == null }
             "todos" -> all.filter { it.fechaEnviadoDepartamentoAcademico != null }
-            else -> all.filter { it.fechaEnviadoDepartamentoAcademico != null && it.fechaRecibidoRegistroLiberacion == null }
+            "en_correccion" -> all.filter {
+                it.fechaEnviadoDepartamentoAcademico != null &&
+                    it.fechaRecibidoRegistroLiberacion == null &&
+                    enCorreccionAcademico(it)
+            }
+            else -> all.filter {
+                it.fechaEnviadoDepartamentoAcademico != null &&
+                    it.fechaRecibidoRegistroLiberacion == null &&
+                    !enCorreccionAcademico(it)
+            }
         }
         val formatter = DateTimeFormatter.ISO_INSTANT
         return lista.map { e ->
@@ -273,7 +308,7 @@ class EgresadoService(
                 modalidad = e.datos_proyecto.modalidad,
                 fechaActualizacion = e.fecha_actualizacion.let { formatter.format(it) },
                 fechaEnviadoDepartamento = e.fechaEnviadoDepartamentoAcademico?.let { formatter.format(it) },
-                estadoRevision = if (e.fechaRecibidoRegistroLiberacion != null) "aprobado" else "pendiente",
+                estadoRevision = estadoRevisionDepartamento(e),
                 fechaSolicitudSinodales = e.fechaSolicitudSinodales?.let { formatter.format(it) },
                 sinodalesAsignados = e.fechaAsignacionSinodales != null,
             )
@@ -348,7 +383,6 @@ class EgresadoService(
 
     fun confirmarRecibidosAnexoXxxiXxxii(id: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
         if (e.fechaRecibidoRegistroLiberacion == null) return false
         if (e.fechaConfirmacionRecibidosAnexoXxxiXxxii != null) return false
         val ahora = Instant.now()
@@ -363,24 +397,25 @@ class EgresadoService(
 
     fun crearAnexo91(id: String): ByteArray? {
         val e = cargarEgresadoPorId(id) ?: return null
-        if (!esResidenciaProfesional(e)) return null
         if (e.fechaConfirmacionRecibidosAnexoXxxiXxxii == null) return null
         val ahora = Instant.now()
         if (e.fechaCreacionAnexo91 == null) {
             egresadoRepository.save(e.copy(fechaCreacionAnexo91 = ahora, fecha_actualizacion = ahora))
         }
-        return generarPdfAnexo(
-            titulo = "Anexo 9.1",
-            templateProperty = "sit.anexo91.plantilla-docx",
-            defaultTemplateClasspath = "templates/ITVO-AC-PR-05-02-Solicitud-del-Acto-de-Recepcion-Profesional.docx",
-            e = e,
-            extras = listOf("MODALIDAD" to e.datos_proyecto.modalidad),
-        )
+        val valores =
+            construirValoresPlantillaHtml(
+                e,
+                listOf(
+                    "MODALIDAD" to e.datos_proyecto.modalidad,
+                    "FECHA_CARTA" to fechaCartaEspanola(ahora),
+                    "TEXTO_OPCION_TI" to textoOpcionTitulacionIntegral(e.datos_proyecto.modalidad),
+                ),
+            )
+        return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-1.html", valores)
     }
 
     fun confirmarEntregaAnexo91(id: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
         if (e.fechaCreacionAnexo91 == null) return false
         if (e.fechaConfirmacionEntregaAnexo91 != null) return false
         val ahora = Instant.now()
@@ -388,10 +423,26 @@ class EgresadoService(
         return true
     }
 
+    /** División de estudios registra la solicitud de constancia 9.2 al egresado (sin generar PDF aquí). */
+    fun solicitarConstancia92Division(id: String): Boolean {
+        val e = cargarEgresadoPorId(id) ?: return false
+        if (e.fechaConfirmacionEntregaAnexo91 == null) return false
+        if (e.fechaSolicitudAnexo92 != null) return false
+        val ahora = Instant.now()
+        egresadoRepository.save(
+            e.copy(
+                fechaSolicitudAnexo92 = ahora,
+                fecha_actualizacion = ahora,
+            ),
+        )
+        return true
+    }
+
     fun crearAnexo92(id: String): ByteArray? {
         val e = cargarEgresadoPorId(id) ?: return null
-        if (!esResidenciaProfesional(e)) return null
         if (e.fechaConfirmacionEntregaAnexo91 == null) return null
+        // Primera generación: exige solicitud previa de división. Re-descarga: si ya existe fecha de creación.
+        if (e.fechaCreacionAnexo92 == null && e.fechaSolicitudAnexo92 == null) return null
         val ahora = Instant.now()
         if (e.fechaCreacionAnexo92 == null) {
             egresadoRepository.save(e.copy(fechaCreacionAnexo92 = ahora, fecha_actualizacion = ahora))
@@ -407,8 +458,7 @@ class EgresadoService(
 
     fun confirmarRecibidoAnexo92(id: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
-        if (e.fechaCreacionAnexo92 == null) return false
+        if (e.fechaSolicitudAnexo92 == null) return false
         if (e.fechaConfirmacionRecibidoAnexo92 != null) return false
         val ahora = Instant.now()
         egresadoRepository.save(e.copy(fechaConfirmacionRecibidoAnexo92 = ahora, fecha_actualizacion = ahora))
@@ -417,7 +467,6 @@ class EgresadoService(
 
     fun solicitarSinodales(id: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
         if (e.fechaConfirmacionRecibidoAnexo92 == null) return false
         if (e.fechaSolicitudSinodales != null) return false
         val ahora = Instant.now()
@@ -451,7 +500,6 @@ class EgresadoService(
 
     fun confirmarSinodalesRecibidos(id: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
         if (e.fechaSolicitudSinodales == null || e.fechaAsignacionSinodales == null) return false
         if (e.fechaConfirmacionSinodalesRecibidos != null) return false
         val ahora = Instant.now()
@@ -461,30 +509,41 @@ class EgresadoService(
 
     fun crearAnexo93(id: String): ByteArray? {
         val e = cargarEgresadoPorId(id) ?: return null
-        if (!esResidenciaProfesional(e)) return null
         if (e.fechaAgendaActo93 == null) return null
         val ahora = Instant.now()
         if (e.fechaCreacionAnexo93 == null) {
             egresadoRepository.save(e.copy(fechaCreacionAnexo93 = ahora, fecha_actualizacion = ahora))
         }
-        return generarPdfAnexo(
-            titulo = "Anexo 9.3",
-            templateProperty = "sit.anexo93.plantilla-docx",
-            defaultTemplateClasspath = "templates/anexo-9-3.docx",
-            e = e,
-            extras = listOf(
-                "ACTO_93" to DateTimeFormatter.ISO_INSTANT.format(e.fechaAgendaActo93),
-                "PRESIDENTE" to (e.sinodalesTribunal?.presidente ?: ""),
-                "SECRETARIO" to (e.sinodalesTribunal?.secretario ?: ""),
-                "VOCAL" to (e.sinodalesTribunal?.vocal ?: ""),
-                "VOCAL_SUPLENTE" to (e.sinodalesTribunal?.vocal_suplente ?: ""),
-            ),
-        )
+        val zona = ZoneId.systemDefault()
+        val acto = e.fechaAgendaActo93!!
+        val actoLegible = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(zona).format(acto)
+        val zActo = acto.atZone(zona)
+        val diaActo = zActo.dayOfMonth.toString().padStart(2, '0')
+        val mesActo = nombreMesEspanol(zActo.monthValue)
+        val anioActo = zActo.year.toString()
+        val horaActo = String.format(Locale.ROOT, "%02d:%02d", zActo.hour, zActo.minute)
+        val valores =
+            construirValoresPlantillaHtml(
+                e,
+                listOf(
+                    "ACTO_93" to actoLegible,
+                    "FECHA_CARTA" to fechaCartaEspanola(Instant.now()),
+                    "TEXTO_OPCION_TI" to textoOpcionTitulacionIntegral(e.datos_proyecto.modalidad),
+                    "ACTO_DIA" to diaActo,
+                    "ACTO_MES" to mesActo,
+                    "ACTO_ANIO" to anioActo,
+                    "ACTO_HORA" to horaActo,
+                    "PRESIDENTE" to (e.sinodalesTribunal?.presidente ?: ""),
+                    "SECRETARIO" to (e.sinodalesTribunal?.secretario ?: ""),
+                    "VOCAL" to (e.sinodalesTribunal?.vocal ?: ""),
+                    "VOCAL_SUPLENTE" to (e.sinodalesTribunal?.vocal_suplente ?: ""),
+                ),
+            )
+        return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-3.html", valores)
     }
 
     fun agendarActo93(id: String, fechaHoraRaw: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
-        if (!esResidenciaProfesional(e)) return false
         if (e.fechaConfirmacionSinodalesRecibidos == null || e.fechaAgendaActo93 != null) return false
 
         val inicio = parseFechaHoraLocal(fechaHoraRaw) ?: return false
@@ -560,6 +619,7 @@ class EgresadoService(
             fecha_confirmacion_recibidos_anexo_xxxi_xxxii = e.fechaConfirmacionRecibidosAnexoXxxiXxxii?.let { formatter.format(it) },
             fecha_creacion_anexo_9_1 = e.fechaCreacionAnexo91?.let { formatter.format(it) },
             fecha_confirmacion_entrega_anexo_9_1 = e.fechaConfirmacionEntregaAnexo91?.let { formatter.format(it) },
+            fecha_solicitud_anexo_9_2 = e.fechaSolicitudAnexo92?.let { formatter.format(it) },
             fecha_creacion_anexo_9_2 = e.fechaCreacionAnexo92?.let { formatter.format(it) },
             fecha_confirmacion_recibido_anexo_9_2 = e.fechaConfirmacionRecibidoAnexo92?.let { formatter.format(it) },
             fecha_solicitud_sinodales = e.fechaSolicitudSinodales?.let { formatter.format(it) },
@@ -610,11 +670,70 @@ class EgresadoService(
     private fun esResidenciaProfesional(e: Egresado): Boolean =
         e.datos_proyecto.modalidad.trim().equals("Residencia Profesional", ignoreCase = true)
 
+    private fun ultimaRevisionResultado(e: Egresado): String? {
+        val oid = e.id ?: return null
+        return revisionService.ultimaRevision(oid)?.resultado
+    }
+
+    /** No residencia: última revisión académica con observaciones y aún sin “liberación/aprobación” en expediente. */
+    private fun enCorreccionAcademico(e: Egresado): Boolean =
+        !esResidenciaProfesional(e) && ultimaRevisionResultado(e) == "observaciones"
+
+    private fun estadoRevisionDepartamento(e: Egresado): String {
+        if (e.fechaRecibidoRegistroLiberacion != null) return "aprobado"
+        if (enCorreccionAcademico(e)) return "con_observaciones"
+        return "pendiente"
+    }
+
     private fun nombreCompleto(e: Egresado): String =
         listOf(e.datos_personales.nombre, e.datos_personales.apellido_paterno, e.datos_personales.apellido_materno)
             .filter { !it.isNullOrBlank() }
             .joinToString(" ")
             .ifBlank { e.numero_control }
+
+    /** Valores para plantillas HTML (9.1 y 9.3): fecha legible en zona local. */
+    private fun construirValoresPlantillaHtml(e: Egresado, extras: List<Pair<String, String>>): Map<String, String> {
+        val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.systemDefault())
+        val valores =
+            mutableMapOf(
+                "NOMBRE" to nombreCompleto(e),
+                "NUMERO_CONTROL" to e.numero_control,
+                "CARRERA" to e.datos_personales.carrera,
+                "NIVEL" to e.datos_personales.nivel.trim().ifBlank { "—" },
+                "PROYECTO" to e.datos_proyecto.nombre_proyecto,
+                "FECHA_GENERACION" to fmt.format(Instant.now()),
+            )
+        for ((k, v) in extras) valores[k] = v
+        expandirAliasPlantilla(valores)
+        return valores
+    }
+
+    private fun fechaCartaEspanola(instant: Instant): String {
+        val z = instant.atZone(ZoneId.systemDefault())
+        val mes = nombreMesEspanol(z.monthValue)
+        return "${z.dayOfMonth} de $mes de ${z.year}"
+    }
+
+    private fun nombreMesEspanol(monthValue1to12: Int): String {
+        val meses =
+            listOf(
+                "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+            )
+        val m = meses.getOrElse(monthValue1to12 - 1) { "—" }
+        return m.replaceFirstChar { it.uppercaseChar() }
+    }
+
+    /** Texto entre paréntesis tras “Titulación integral” en formatos ITVO. */
+    private fun textoOpcionTitulacionIntegral(modalidad: String): String {
+        val m = modalidad.trim().lowercase(Locale.ROOT)
+        return when {
+            m.contains("residencia") -> "REPORTE FINAL DE RESIDENCIA PROFESIONAL"
+            m.contains("tesina") -> "TESINA"
+            m.contains("ceneval") -> "EXAMEN CENEVAL"
+            else -> modalidad.uppercase(Locale.forLanguageTag("es-MX"))
+        }
+    }
 
     private fun generarPdfAnexo(
         titulo: String,
@@ -631,25 +750,37 @@ class EgresadoService(
             "FECHA_GENERACION" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
         )
         for ((k, v) in extras) valores[k] = v
+        expandirAliasPlantilla(valores)
 
         val docxTemplate = cargarPlantillaDocx(templateProperty, defaultTemplateClasspath)
-        if (docxTemplate != null) {
-            val pdfPlantilla = convertirDocxTemplateAPdf(docxTemplate, valores)
-            if (pdfPlantilla != null) return pdfPlantilla
-            log.error("No se pudo convertir plantilla DOCX de {} a PDF.", titulo)
-            return null
-        } else {
-            log.error("No se encontró plantilla DOCX para {}.", titulo)
+        if (docxTemplate == null) {
+            log.warn(
+                "No se pudo cargar la plantilla DOCX para {}: revisa la propiedad {} (ruta absoluta al .docx) o el recurso en classpath {}.",
+                titulo,
+                templateProperty,
+                defaultTemplateClasspath,
+            )
             return null
         }
+        val pdfPlantilla = convertirDocxTemplateAPdf(docxTemplate, valores)
+        if (pdfPlantilla != null) return pdfPlantilla
+        log.warn(
+            "LibreOffice no generó PDF para {}. Revisa que LibreOffice esté instalado y sit.soffice.path apunte a soffice/soffice.exe.",
+            titulo,
+        )
+        return null
     }
 
     private fun cargarPlantillaDocx(templateProperty: String, defaultTemplateClasspath: String): ByteArray? {
         val rutaConfig = env.getProperty(templateProperty)?.trim().orEmpty()
         if (rutaConfig.isNotEmpty()) {
+            try {
+                val path = Paths.get(rutaConfig)
+                if (Files.isRegularFile(path)) return Files.readAllBytes(path)
+            } catch (_: Exception) { /* continuar */ }
             val f = File(rutaConfig)
             if (f.exists() && f.isFile) return Files.readAllBytes(f.toPath())
-            log.warn("Plantilla configurada no existe: {}={}", templateProperty, rutaConfig)
+            log.warn("Plantilla configurada no existe o no es legible: {}={}", templateProperty, rutaConfig)
         }
         return try {
             ClassPathResource(defaultTemplateClasspath).inputStream.use { it.readBytes() }
@@ -658,65 +789,191 @@ class EgresadoService(
         }
     }
 
+    private fun ejecutarLibreOfficeConvert(soffice: Array<String>, tmpDir: File, docxFile: File, pdfFile: File, conPerfilAislado: Boolean): Boolean {
+        val args = mutableListOf(*soffice, "--headless")
+        if (conPerfilAislado) {
+            args.add("-env:UserInstallation=file:///${tmpDir.absolutePath.replace('\\', '/')}/lo-profile")
+        }
+        args.addAll(listOf("--convert-to", "pdf:writer_pdf_Export", "--outdir", tmpDir.absolutePath, docxFile.absolutePath))
+        return try {
+            val proc = ProcessBuilder(args).redirectErrorStream(true).start()
+            val salida = proc.inputStream.use { stream ->
+                String(stream.readAllBytes(), StandardCharsets.UTF_8)
+            }
+            val termino = proc.waitFor(90, TimeUnit.SECONDS)
+            val exit = if (termino) proc.exitValue() else -1
+            val ok = termino && exit == 0 && pdfFile.exists()
+            if (!ok) {
+                log.warn(
+                    "LibreOffice (perfilAislado={}): exit={}, termino={}, exe={}, salida={}",
+                    conPerfilAislado,
+                    exit,
+                    termino,
+                    soffice.joinToString(),
+                    salida.take(2000),
+                )
+            }
+            ok
+        } catch (ex: Exception) {
+            log.warn("LibreOffice error: {}", ex.message)
+            false
+        }
+    }
+
     private fun convertirDocxTemplateAPdf(docxBytes: ByteArray, valores: Map<String, String>): ByteArray? {
         val docxRellenado = reemplazarMarcadoresDocx(docxBytes, valores)
         val tmpDir = Files.createTempDirectory("sit-anexos-").toFile()
         val docxFile = File(tmpDir, "anexo.docx")
         val pdfFile = File(tmpDir, "anexo.pdf")
+        val soffice = comandoSoffice()
         return try {
             Files.write(docxFile.toPath(), docxRellenado)
-            val proc = ProcessBuilder(
-                "soffice",
-                "--headless",
-                "--convert-to",
-                "pdf:writer_pdf_Export",
-                "--outdir",
-                tmpDir.absolutePath,
-                docxFile.absolutePath,
-            )
-                .redirectErrorStream(true)
-                .start()
-            val ok = proc.waitFor(90, java.util.concurrent.TimeUnit.SECONDS) && proc.exitValue() == 0
-            if (!ok || !pdfFile.exists()) return null
-            Files.readAllBytes(pdfFile.toPath())
-        } catch (_: Exception) {
+            when {
+                ejecutarLibreOfficeConvert(soffice, tmpDir, docxFile, pdfFile, conPerfilAislado = true) -> Files.readAllBytes(pdfFile.toPath())
+                ejecutarLibreOfficeConvert(soffice, tmpDir, docxFile, pdfFile, conPerfilAislado = false) -> Files.readAllBytes(pdfFile.toPath())
+                else -> null
+            }
+        } catch (ex: Exception) {
+            log.error("Error al convertir DOCX a PDF: {}", ex.message, ex)
             null
         } finally {
             pdfFile.delete()
             docxFile.delete()
+            File(tmpDir, "lo-profile").deleteRecursively()
             tmpDir.delete()
         }
     }
 
+    /** Ruta a soffice: propiedad, variable de entorno, rutas típicas en Windows, o PATH. */
+    private fun comandoSoffice(): Array<String> {
+        val prop = env.getProperty("sit.soffice.path")?.trim().orEmpty()
+        if (prop.isNotEmpty() && File(prop).isFile) return arrayOf(prop)
+        System.getenv("SIT_SOFFICE")?.trim()?.takeIf { it.isNotEmpty() && File(it).isFile() }?.let { return arrayOf(it) }
+        if (System.getProperty("os.name", "").lowercase().contains("win")) {
+            listOf(
+                """C:\Program Files\LibreOffice\program\soffice.exe""",
+                """C:\Program Files (x86)\LibreOffice\program\soffice.exe""",
+            ).firstOrNull { File(it).isFile }?.let { return arrayOf(it) }
+        }
+        return arrayOf("soffice")
+    }
+
+    /** Igual nombre de campo en plantillas ITVO / variaciones. */
+    private fun expandirAliasPlantilla(valores: MutableMap<String, String>) {
+        val nombre = valores["NOMBRE"].orEmpty()
+        val control = valores["NUMERO_CONTROL"].orEmpty()
+        val carrera = valores["CARRERA"].orEmpty()
+        val proyecto = valores["PROYECTO"].orEmpty()
+        valores.putIfAbsent("NOMBRE_COMPLETO", nombre)
+        valores.putIfAbsent("NOMBRE_ALUMNO", nombre)
+        valores.putIfAbsent("ALUMNO", nombre)
+        valores.putIfAbsent("CONTROL", control)
+        valores.putIfAbsent("NO_CONTROL", control)
+        valores.putIfAbsent("NUMERO_DE_CONTROL", control)
+        valores.putIfAbsent("CARRERA_COMPLETA", carrera)
+        valores.putIfAbsent("NOMBRE_PROYECTO", proyecto)
+    }
+
+    /**
+     * Reemplaza marcadores sin reescribir el DOCX con POI (evita romper el formato de plantillas complejas).
+     * Procesa los XML del paquete Office Open XML.
+     */
     private fun reemplazarMarcadoresDocx(docxBytes: ByteArray, valores: Map<String, String>): ByteArray {
+        return try {
+            reemplazarMarcadoresEnZipDocx(docxBytes, valores)
+        } catch (ex: Exception) {
+            log.warn("Reemplazo por ZIP falló ({}), se intenta Apache POI.", ex.message)
+            reemplazarMarcadoresDocxPoi(docxBytes, valores)
+        }
+    }
+
+    private fun esXmlWordParaMarcadores(entryName: String): Boolean {
+        if (!entryName.startsWith("word/") || !entryName.endsWith(".xml")) return false
+        val base = entryName.removePrefix("word/").substringBefore(".xml")
+        return base == "document" ||
+            base.startsWith("header") ||
+            base.startsWith("footer") ||
+            base == "footnotes" ||
+            base == "endnotes"
+    }
+
+    private fun escapeXmlTextoContenido(s: String): String =
+        s.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+
+    private fun aplicarMarcadoresEnTextoXml(original: String, valores: Map<String, String>): String {
+        var texto = original
+        valores.forEach { (k, v) ->
+            val safe = escapeXmlTextoContenido(v.ifBlank { "—" })
+            texto = texto.replace("{{$k}}", safe, ignoreCase = true)
+            texto = texto.replace("$" + "{" + k + "}", safe, ignoreCase = true)
+            texto = texto.replace("<<$k>>", safe, ignoreCase = true)
+            texto = texto.replace("[$k]", safe, ignoreCase = true)
+        }
+        return texto
+    }
+
+    private fun reemplazarMarcadoresEnZipDocx(docxBytes: ByteArray, valores: Map<String, String>): ByteArray {
+        val outBytes = ByteArrayOutputStream()
+        ZipOutputStream(outBytes).use { zOut ->
+            ZipInputStream(ByteArrayInputStream(docxBytes)).use { zIn ->
+                var entry = zIn.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    val raw = zIn.readAllBytes()
+                    val processed =
+                        if (!entry.isDirectory && esXmlWordParaMarcadores(name)) {
+                            val xml = String(raw, StandardCharsets.UTF_8)
+                            aplicarMarcadoresEnTextoXml(xml, valores).toByteArray(StandardCharsets.UTF_8)
+                        } else {
+                            raw
+                        }
+                    val ze = ZipEntry(name)
+                    ze.time = entry.time
+                    zOut.putNextEntry(ze)
+                    zOut.write(processed)
+                    zOut.closeEntry()
+                    entry = zIn.nextEntry
+                }
+            }
+        }
+        return outBytes.toByteArray()
+    }
+
+    private fun reemplazarMarcadoresDocxPoi(docxBytes: ByteArray, valores: Map<String, String>): ByteArray {
         val out = ByteArrayOutputStream()
         XWPFDocument(ByteArrayInputStream(docxBytes)).use { doc ->
-            doc.paragraphs.forEach { p -> reemplazarTextoParrafo(p.text ?: "", p, valores) }
+            fun textoParrafo(p: org.apache.poi.xwpf.usermodel.XWPFParagraph): String =
+                buildString { p.runs.forEach { r -> append(r.getText(0) ?: "") } }
+
+            fun reemplazarParrafo(p: org.apache.poi.xwpf.usermodel.XWPFParagraph) {
+                val original = textoParrafo(p)
+                if (original.isBlank()) return
+                var texto = original
+                valores.forEach { (k, v) ->
+                    val valSafe = v.ifBlank { "—" }
+                    texto = texto
+                        .replace("{{$k}}", valSafe, ignoreCase = true)
+                        .replace("$" + "{" + k + "}", valSafe, ignoreCase = true)
+                        .replace("<<$k>>", valSafe, ignoreCase = true)
+                }
+                if (texto == original) return
+                while (p.runs.isNotEmpty()) p.removeRun(0)
+                p.createRun().setText(texto, 0)
+            }
+
+            doc.paragraphs.forEach(::reemplazarParrafo)
             doc.tables.forEach { t ->
                 t.rows.forEach { r ->
                     r.tableCells.forEach { c ->
-                        c.paragraphs.forEach { p -> reemplazarTextoParrafo(p.text ?: "", p, valores) }
+                        c.paragraphs.forEach(::reemplazarParrafo)
                     }
                 }
             }
             doc.write(out)
         }
         return out.toByteArray()
-    }
-
-    private fun reemplazarTextoParrafo(textoOriginal: String, parrafo: org.apache.poi.xwpf.usermodel.XWPFParagraph, valores: Map<String, String>) {
-        if (textoOriginal.isBlank()) return
-        var texto = textoOriginal
-        valores.forEach { (k, v) ->
-            val valSafe = v.ifBlank { "—" }
-            texto = texto
-                .replace("{{$k}}", valSafe, ignoreCase = true)
-                .replace("\${$k}", valSafe, ignoreCase = true)
-                .replace("<<$k>>", valSafe, ignoreCase = true)
-        }
-        if (texto == textoOriginal) return
-        while (parrafo.runs.size > 0) parrafo.removeRun(0)
-        parrafo.createRun().setText(texto, 0)
     }
 
 }

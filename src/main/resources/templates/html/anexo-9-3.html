@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>Anexo 9.3</title>
+<style type="text/css">
+@page { size: A4; margin: 12mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #000; margin: 0; line-height: 1.35; }
+table.hdr { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; }
+table.hdr td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; font-weight: bold; }
+table.hdr .logo { width: 22%; text-align: center; }
+.tit { font-weight: bold; text-align: center; font-size: 11pt; margin: 8px 0; }
+.der { text-align: right; }
+.just { text-align: justify; }
+.b { font-weight: bold; }
+.u { text-decoration: underline; }
+.sec { margin-top: 10px; }
+</style>
+</head>
+<body>
+<table class="hdr">
+  <tr>
+    <td class="logo" rowspan="3">ESCUDO<br/>ITVO</td>
+    <td>Nombre del documento: Formato de Aviso de Realización del Acto de Recepción Profesional</td>
+    <td style="width:28%">Código: ITVO-AC-PR-05-04</td>
+  </tr>
+  <tr><td></td><td>Revisión: 2</td></tr>
+  <tr>
+    <td>Referencia a la Norma ISO 9001:2015, 8.1, 8.5</td>
+    <td>Página 1 de 1</td>
+  </tr>
+</table>
+<p class="tit">Anexo 9.3 Formato de Aviso de Realización del Acto Protocolario de Titulación Integral</p>
+<p class="der">Fecha: {{FECHA_CARTA}}.</p>
+<p class="sec b">C. INTEGRANTES DEL JURADO</p>
+<p class="b">PRESIDENTE: {{PRESIDENTE}}</p>
+<p class="b">SECRETARIO: {{SECRETARIO}}</p>
+<p class="b">VOCAL: {{VOCAL}}</p>
+<p class="b">VOCAL SUPLENTE: {{VOCAL_SUPLENTE}}</p>
+<p class="b" style="letter-spacing:0.15em;margin-top:8px;">P R E S E N T E</p>
+<p class="just">&#160;</p>
+<p class="just">
+  Por este medio le informo que el Acto de Recepción Profesional de
+  <span class="b u">C. {{NOMBRE}}</span>, con No. de control
+  <span class="b u">{{NUMERO_CONTROL}}</span>, egresado del Instituto Tecnológico del Valle de Oaxaca,
+  de la carrera de <span class="b u">{{CARRERA}}</span>, con la opción
+  <span class="b u">TITULACIÓN INTEGRAL ({{TEXTO_OPCION_TI}})</span>,
+  con el proyecto denominado: “<span class="b u">{{PROYECTO}}</span>”,
+  que se realizará el día <span class="b u">{{ACTO_DIA}}</span> de <span class="b u">{{ACTO_MES}}</span> del
+  <span class="b u">{{ACTO_ANIO}}</span> a las <span class="b u">{{ACTO_HORA}}</span> horas,
+  conforme a la fecha y hora registrada en el SIT ({{ACTO_93}}).
+</p>
+<p class="just">&#160;</p>
+<p class="just">
+  Por lo anterior, se les solicita su puntual asistencia a este acto, por lo menos con 15 minutos de anticipación.
+  <span class="b">ES IMPORTANTE QUE SE PRESENTEN CON VESTIMENTA FORMAL.</span>
+</p>
+</body>
+</html>

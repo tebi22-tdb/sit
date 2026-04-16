@@ -3,6 +3,7 @@ package com.sit_titulacion.sit.web.api
 import com.sit_titulacion.sit.config.UsuarioPrincipal
 import com.sit_titulacion.sit.service.EmailService
 import com.sit_titulacion.sit.service.UsuarioService
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -35,6 +36,7 @@ class UsuarioController(
     private val usuarioService: UsuarioService,
     private val emailService: EmailService,
 ) {
+    private val log = LoggerFactory.getLogger(UsuarioController::class.java)
     @GetMapping
     fun listar(@AuthenticationPrincipal principal: UsuarioPrincipal?): ResponseEntity<Any> {
         if (principal == null || principal.getRol() != "coordinador") {
@@ -69,17 +71,47 @@ class UsuarioController(
         val nombre = body.nombre.trim()
         val rol = body.rol.trim().ifBlank { "coordinador" }
         val correo = body.correo_electronico.trim()
-        val curp = body.curp.trim()
+        val curp = body.curp.trim().uppercase()
         if (correo.isBlank()) {
             return ResponseEntity.badRequest().body(mapOf("error" to "El correo electrónico es obligatorio."))
         }
+        if (curp.isBlank()) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "La CURP es obligatoria."))
+        }
         return try {
             val (user, password) = usuarioService.crearUsuarioStaff(nombre, correo, rol, correo, curp)
-            emailService.enviarCredenciales(correo, user, password)
-            ResponseEntity.ok(mapOf(
-                "ok" to true,
-                "message" to "Usuario creado. Se han enviado las credenciales al correo.",
-            ))
+            try {
+                val enviado = emailService.enviarCredenciales(correo, user, password)
+                if (enviado) {
+                    ResponseEntity.ok(
+                        mapOf(
+                            "ok" to true,
+                            "message" to "Usuario creado. Se han enviado las credenciales al correo.",
+                            "correo_enviado" to true,
+                        ),
+                    )
+                } else {
+                    ResponseEntity.ok(
+                        mapOf(
+                            "ok" to true,
+                            "message" to
+                                "Usuario creado. No se envió correo (configure spring.mail o revise el remitente). Comunique la contraseña por otro medio.",
+                            "correo_enviado" to false,
+                        ),
+                    )
+                }
+            } catch (mailEx: Exception) {
+                log.error("Usuario staff creado pero falló el envío de correo a {}: {}", correo, mailEx.message, mailEx)
+                ResponseEntity.ok(
+                    mapOf(
+                        "ok" to true,
+                        "message" to
+                            "Usuario creado. No se pudo enviar el correo; comunique la contraseña por otro medio o revise SMTP.",
+                        "correo_enviado" to false,
+                        "detalle_correo" to (mailEx.message ?: ""),
+                    ),
+                )
+            }
         } catch (e: IllegalArgumentException) {
             ResponseEntity.badRequest().body(mapOf("error" to (e.message ?: "Datos inválidos.")))
         }

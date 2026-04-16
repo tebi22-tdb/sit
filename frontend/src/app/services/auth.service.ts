@@ -95,8 +95,20 @@ export class AuthService {
     return this.usuario?.rol?.toLowerCase() === 'academico';
   }
 
-  crearUsuario(body: CrearUsuarioBody): Observable<{ ok: boolean; message?: string; error?: string }> {
-    return this.http.post<{ ok: boolean; message?: string; error?: string }>(API + '/usuarios', body);
+  crearUsuario(body: CrearUsuarioBody): Observable<{
+    ok: boolean;
+    message?: string;
+    error?: string;
+    correo_enviado?: boolean;
+    detalle_correo?: string;
+  }> {
+    return this.http.post<{
+      ok: boolean;
+      message?: string;
+      error?: string;
+      correo_enviado?: boolean;
+      detalle_correo?: string;
+    }>(API + '/usuarios', body);
   }
 
   listarUsuarios(): Observable<UsuarioStaffItem[]> {

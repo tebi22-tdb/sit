@@ -32,6 +32,7 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
   guardando = false;
   mensaje = '';
   resultadoNueva: 'observaciones' | 'aprobado' = 'observaciones';
+  mostrarPanelRevision = true;
 
   subiendoDocumento = false;
   mensajeSubidaArchivo = '';
@@ -123,6 +124,7 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
 
   /** Limpia el formulario para escribir una nueva revisión. */
   nuevaRevisionClick(): void {
+    this.mostrarPanelRevision = true;
     this.observacionesNueva = '';
     this.mensaje = '';
   }
@@ -174,6 +176,10 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
           this.guardando = false;
           this.observacionesNueva = '';
           this.mensaje = resultado === 'aprobado' ? 'Documento aprobado.' : 'Revisión guardada con observaciones.';
+          if (resultado === 'aprobado') {
+            this.router.navigate(['/departamento-academico']);
+            return;
+          }
           this.cargarRevisiones(true);
         },
         error: (err) => {

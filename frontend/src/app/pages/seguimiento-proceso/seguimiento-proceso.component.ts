@@ -1,11 +1,39 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import flatpickr from 'flatpickr';
+import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { HeaderComponent } from '../../layout/header/header.component';
+import { mensajeErrorApiConBlob } from '../../core/http-blob-error';
 import { EgresadoService, EgresadoDetail, EgresadoItem } from '../../services/egresado.service';
 
 type EstadoFiltro = 'todos' | 'en_tiempo' | 'rezagado' | 'vencido';
 type OrdenFiltro = 'prioridad' | 'nombre' | 'control';
+
+/** Días de margen antes del límite para pasar de "en tiempo" a "rezagado". */
+const MARGEN_REZAGO_DIAS = 30;
+
+function diasPlazoPorModalidad(modalidad: string): number {
+  const m = modalidad.trim().toLowerCase();
+  if (m === 'residencia profesional') return 183;
+  if (m === 'tesina' || m === 'ceneval') return 365;
+  return 548;
+}
+
+function inicioDiaLocal(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function diffDiasCalendario(fechaFin: Date, fechaInicio: Date): number {
+  const ms = inicioDiaLocal(fechaFin).getTime() - inicioDiaLocal(fechaInicio).getTime();
+  return Math.round(ms / 86400000);
+}
+
+function sumarDiasCalendario(base: Date, dias: number): Date {
+  const d = inicioDiaLocal(base);
+  d.setDate(d.getDate() + dias);
+  return d;
+}
 
 interface SeguimientoItem {
   id: string;
@@ -35,7 +63,8 @@ interface PasoProcesoUi {
   templateUrl: './seguimiento-proceso.component.html',
   styleUrl: './seguimiento-proceso.component.css',
 })
-export class SeguimientoProcesoComponent implements OnInit {
+export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
+  @ViewChild('fechaActoInput') fechaActoInput?: ElementRef<HTMLInputElement>;
   cargando = true;
   error = '';
   items: SeguimientoItem[] = [];
@@ -51,6 +80,9 @@ export class SeguimientoProcesoComponent implements OnInit {
   cargandoDetalle = false;
   procesandoPaso = false;
   mensajeProceso = '';
+  fechaActo93 = '';
+  agendaActo93Ocupados: Date[] = [];
+  agenda93Picker: FlatpickrInstance | null = null;
 
   get carrerasDisponibles(): string[] {
     return [...new Set(this.items.map((i) => i.carrera))].sort((a, b) => a.localeCompare(b));
@@ -104,6 +136,11 @@ export class SeguimientoProcesoComponent implements OnInit {
     this.cargar();
   }
 
+  ngOnDestroy(): void {
+    this.agenda93Picker?.destroy();
+    this.agenda93Picker = null;
+  }
+
   seleccionarEstado(estado: EstadoFiltro): void {
     this.filtroEstado = estado;
   }
@@ -128,13 +165,22 @@ export class SeguimientoProcesoComponent implements OnInit {
     return 'En tiempo';
   }
 
+  /** Misma modalidad que en formulario / backend (Residencia Profesional usa Liberar; el resto revisión académica). */
+  get esResidenciaProfesionalSeguimiento(): boolean {
+    return (this.detalleSeleccionado?.datos_proyecto?.modalidad ?? '').trim() === 'Residencia Profesional';
+  }
+
   seleccionarEgresado(item: SeguimientoItem): void {
     this.mensajeProceso = '';
     this.cargandoDetalle = true;
+    this.fechaActo93 = '';
+    this.agenda93Picker?.destroy();
+    this.agenda93Picker = null;
     this.egresadoService.obtenerPorId(item.id).subscribe({
       next: (d) => {
         this.detalleSeleccionado = d;
         this.cargandoDetalle = false;
+        this.cargarAgendaActo93Ocupados();
       },
       error: () => {
         this.detalleSeleccionado = null;
@@ -145,13 +191,26 @@ export class SeguimientoProcesoComponent implements OnInit {
 
   get pasosProcesoTitulacion(): PasoProcesoUi[] {
     if (!this.detalleSeleccionado) return [];
+    const esRes = this.esResidenciaProfesionalSeguimiento;
     const steps = [
-      { key: 'fecha_enviado_departamento_academico', titulo: 'Solicitud de anexo XXXI y XXXII', descripcion: 'Se registra el envio al departamento academico para revision inicial.' },
-      { key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii', titulo: 'Recibidos anexo XXXI y XXXII', descripcion: 'Se confirma recepcion de anexo XXXI y XXXII.' },
+      {
+        key: 'fecha_enviado_departamento_academico',
+        titulo: 'Solicitud de anexo XXXI y XXXII',
+        descripcion: esRes
+          ? 'Se registra el envío al departamento académico para revisión inicial.'
+          : 'Se envía al departamento académico para revisión del expediente (anexo XXXI y XXXII).',
+      },
+      {
+        key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
+        titulo: 'Recibidos anexo XXXI y XXXII',
+        descripcion: esRes
+          ? 'Se confirma recepción de anexo XXXI y XXXII.'
+          : 'División confirma recepción una vez aprobado el expediente en el departamento académico.',
+      },
       { key: 'fecha_creacion_anexo_9_1', titulo: 'Crear 9.1', descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulacion.' },
       { key: 'fecha_confirmacion_entrega_anexo_9_1', titulo: 'Entrega de anexo 9.1', descripcion: 'El egresado confirma entrega del anexo 9.1.' },
-      { key: 'fecha_creacion_anexo_9_2', titulo: 'Crear 9.2', descripcion: 'Se genera el documento 9.2.' },
-      { key: 'fecha_confirmacion_recibido_anexo_9_2', titulo: 'Recibido 9.2', descripcion: 'El egresado confirma recepcion del documento 9.2.' },
+      { key: 'fecha_solicitud_anexo_9_2', titulo: 'Solicitar 9.2 al egresado', descripcion: 'División registra la solicitud de entrega de la constancia 9.2.' },
+      { key: 'fecha_confirmacion_recibido_anexo_9_2', titulo: 'Recibido 9.2', descripcion: 'Se confirma la recepcion de la constancia 9.2 (división o egresado).' },
       { key: 'fecha_solicitud_sinodales', titulo: 'Solicitud de sinodales', descripcion: 'Se solicita la asignacion del tribunal de sinodales.' },
       { key: 'fecha_confirmacion_sinodales_recibidos', titulo: 'Recibimos sinodales', descripcion: 'Se confirma que el egresado recibio la asignacion de sinodales.' },
       { key: 'fecha_agenda_acto_9_3', titulo: 'Agendar acto 9.3', descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.' },
@@ -249,7 +308,9 @@ export class SeguimientoProcesoComponent implements OnInit {
       },
       error: (err) => {
         this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo generar 9.1.';
+        void mensajeErrorApiConBlob(err, 'No se pudo generar 9.1.').then((m) => {
+          this.mensajeProceso = m;
+        });
       },
     });
   }
@@ -271,21 +332,19 @@ export class SeguimientoProcesoComponent implements OnInit {
     });
   }
 
-  crearDescargar92(): void {
+  solicitarConstancia92AlEgresado(): void {
     if (!this.detalleSeleccionado || this.procesandoPaso) return;
     this.procesandoPaso = true;
     this.mensajeProceso = '';
-    const nc = this.detalleSeleccionado.numero_control;
-    this.egresadoService.descargarAnexo92(this.detalleSeleccionado.id).subscribe({
-      next: (blob) => {
+    this.egresadoService.solicitarConstancia92Division(this.detalleSeleccionado.id).subscribe({
+      next: () => {
         this.procesandoPaso = false;
-        this.descargarBlob(blob, `Anexo-9.2-${nc}.pdf`);
-        this.mensajeProceso = 'Anexo 9.2 generado.';
+        this.mensajeProceso = 'Solicitud de constancia 9.2 registrada.';
         this.refrescarDetalle();
       },
       error: (err) => {
         this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo generar 9.2.';
+        this.mensajeProceso = err?.error?.error ?? 'No se pudo registrar la solicitud 9.2.';
       },
     });
   }
@@ -297,12 +356,12 @@ export class SeguimientoProcesoComponent implements OnInit {
     this.egresadoService.confirmarRecibidoAnexo92(this.detalleSeleccionado.id).subscribe({
       next: () => {
         this.procesandoPaso = false;
-        this.mensajeProceso = 'Recibido 9.2 confirmado.';
+        this.mensajeProceso = 'Constancia 9.2: recepción confirmada.';
         this.refrescarDetalle();
       },
       error: (err) => {
         this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar recibido.';
+        this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar la recepción del 9.2.';
       },
     });
   }
@@ -353,7 +412,9 @@ export class SeguimientoProcesoComponent implements OnInit {
       next: () => {
         this.procesandoPaso = false;
         this.mensajeProceso = 'Acto 9.3 agendado.';
+        this.fechaActo93 = '';
         this.refrescarDetalle();
+        this.cargarAgendaActo93Ocupados();
       },
       error: (err) => {
         this.procesandoPaso = false;
@@ -376,7 +437,9 @@ export class SeguimientoProcesoComponent implements OnInit {
       },
       error: (err) => {
         this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo generar 9.3.';
+        void mensajeErrorApiConBlob(err, 'No se pudo generar 9.3.').then((m) => {
+          this.mensajeProceso = m;
+        });
       },
     });
   }
@@ -386,7 +449,7 @@ export class SeguimientoProcesoComponent implements OnInit {
     this.error = '';
     this.egresadoService.listar().subscribe({
       next: (lista: EgresadoItem[]) => {
-        this.items = lista.map((e, idx) => this.mapearItem(e, idx));
+        this.items = lista.map((e) => this.mapearItem(e));
         this.cargando = false;
       },
       error: () => {
@@ -396,23 +459,66 @@ export class SeguimientoProcesoComponent implements OnInit {
     });
   }
 
-  private mapearItem(e: EgresadoItem, idx: number): SeguimientoItem {
-    const estados: SeguimientoItem['estado'][] = ['en_tiempo', 'rezagado', 'vencido'];
-    const estado = estados[idx % 3];
+  private mapearItem(e: EgresadoItem): SeguimientoItem {
     const hoy = new Date();
-    const hace = new Date(hoy.getTime() - (idx + 2) * 86400000);
-    const limite = new Date(hoy.getTime() + ((idx % 3) - 1) * 15 * 86400000);
-    const faltantes = ['Sin atraso', 'Anexo XXXII', 'Acto protocolario', 'Sinodales'];
+    const modalidad = e.modalidad?.trim() || '—';
+    const producto = modalidad !== '—' ? `Titulación — ${modalidad}` : 'Seguimiento de titulación';
+
+    const isoUltimo = e.fecha_actualizacion;
+    const ultimoMovimiento = isoUltimo ? this.formatoFecha(new Date(isoUltimo)) : '—';
+
+    if (e.fecha_creacion_anexo_9_3) {
+      return {
+        id: e.id,
+        alumno: e.nombre || '—',
+        noControl: e.numero_control || '—',
+        producto,
+        carrera: e.carrera || '—',
+        estado: 'en_tiempo',
+        documentoFaltante: 'Sin atraso',
+        ultimoMovimiento,
+        fechaLimite: 'Finalizado',
+      };
+    }
+
+    const isoInicio = e.fecha_enviado_departamento_academico || e.fecha_creacion;
+    const inicio = isoInicio ? new Date(isoInicio) : hoy;
+    if (isNaN(inicio.getTime())) {
+      return {
+        id: e.id,
+        alumno: e.nombre || '—',
+        noControl: e.numero_control || '—',
+        producto,
+        carrera: e.carrera || '—',
+        estado: 'en_tiempo',
+        documentoFaltante: 'En curso',
+        ultimoMovimiento,
+        fechaLimite: '—',
+      };
+    }
+
+    const plazoDias = diasPlazoPorModalidad(modalidad);
+    const fechaLimiteDate = sumarDiasCalendario(inicio, plazoDias);
+    const diasRestantes = diffDiasCalendario(fechaLimiteDate, hoy);
+
+    let estado: SeguimientoItem['estado'];
+    if (diasRestantes < 0) estado = 'vencido';
+    else if (diasRestantes <= MARGEN_REZAGO_DIAS) estado = 'rezagado';
+    else estado = 'en_tiempo';
+
+    const documentoFaltante =
+      estado === 'vencido' ? 'Plazo vencido' : estado === 'rezagado' ? 'En curso (cerca del límite)' : 'En curso';
+
     return {
       id: e.id,
       alumno: e.nombre || '—',
       noControl: e.numero_control || '—',
-      producto: 'Seguimiento de titulación',
+      producto,
       carrera: e.carrera || '—',
       estado,
-      documentoFaltante: faltantes[idx % faltantes.length],
-      ultimoMovimiento: this.formatoFecha(hace),
-      fechaLimite: this.formatoFecha(limite),
+      documentoFaltante,
+      ultimoMovimiento,
+      fechaLimite: this.formatoFecha(fechaLimiteDate),
     };
   }
 
@@ -421,6 +527,64 @@ export class SeguimientoProcesoComponent implements OnInit {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
+  }
+
+  abrirCalendarioActo93(): void {
+    this.initAgendaActo93Picker();
+    this.agenda93Picker?.open();
+  }
+
+  private cargarAgendaActo93Ocupados(): void {
+    this.egresadoService.getAgendaActo93Ocupados().subscribe({
+      next: (res) => {
+        this.agendaActo93Ocupados = (res?.ocupados ?? [])
+          .map((s) => new Date(s))
+          .filter((d) => !isNaN(d.getTime()));
+        this.initAgendaActo93Picker();
+      },
+      error: () => {
+        this.agendaActo93Ocupados = [];
+      },
+    });
+  }
+
+  private initAgendaActo93Picker(): void {
+    const el = this.fechaActoInput?.nativeElement;
+    if (!el) return;
+    this.agenda93Picker?.destroy();
+    this.agenda93Picker = flatpickr(el, {
+      enableTime: true,
+      time_24hr: true,
+      minuteIncrement: 15,
+      dateFormat: 'Y-m-d\\TH:i',
+      minTime: '10:00',
+      maxTime: '14:00',
+      disable: [(date) => date.getDay() === 0 || date.getDay() === 6],
+      onChange: (_dates, dateStr) => {
+        this.fechaActo93 = dateStr;
+      },
+      onDayCreate: (_dObj, _dStr, _fp, dayElem) => {
+        const dateObj = (dayElem as unknown as { dateObj?: Date }).dateObj;
+        if (!dateObj) return;
+        const key = this.toLocalDateKey(dateObj);
+        if (this.diasOcupadosAgenda93.includes(key)) {
+          dayElem.classList.add('agenda-dia-ocupado');
+          dayElem.title = 'Ya hay acto agendado este día';
+        }
+      },
+    });
+  }
+
+  private get diasOcupadosAgenda93(): string[] {
+    const set = new Set(this.agendaActo93Ocupados.map((d) => this.toLocalDateKey(d)));
+    return [...set];
+  }
+
+  private toLocalDateKey(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 }
 

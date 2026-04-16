@@ -75,8 +75,10 @@ class UsuarioService(
     ): Pair<String, String> {
         val userTrim = usernameLogin.trim()
         val correoTrim = correoElectronico.trim()
+        val curpNorm = curp.trim().uppercase()
         if (userTrim.isBlank()) throw IllegalArgumentException("El usuario (para iniciar sesión) es obligatorio.")
         if (correoTrim.isBlank()) throw IllegalArgumentException("El correo electrónico es obligatorio.")
+        if (curpNorm.isBlank()) throw IllegalArgumentException("La CURP es obligatoria.")
         if (usuarioRepository.existsByUsername(userTrim)) {
             throw IllegalArgumentException("Ya existe un usuario con ese correo/usuario: $userTrim")
         }
@@ -88,7 +90,7 @@ class UsuarioService(
             rol = rol,
             egresadoId = null,
             nombre = nombre.trim().takeIf { it.isNotBlank() },
-            curp = curp.trim().takeIf { it.isNotBlank() },
+            curp = curpNorm,
             correoElectronico = correoTrim,
             activo = true,
         )

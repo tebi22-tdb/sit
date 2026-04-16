@@ -17,5 +17,12 @@ Anexo 9.3 — ITVO-AC-PR-05-04 (aviso de realización del acto)
 Si entregan una versión nueva de algún formato, sustituye el .docx correspondiente aquí
 (mismo nombre de archivo en templates/) o configura la ruta absoluta en application.properties.
 
-Requisito en el servidor: LibreOffice (programa soffice) para convertir DOCX → PDF.
-Sin LibreOffice el SIT genera un PDF de respaldo muy simple (sin membrete ITVO).
+Marcadores que el SIT reemplaza en el .docx (texto plano en Word):
+  {{NOMBRE}}, {{NUMERO_CONTROL}}, {{CARRERA}}, {{PROYECTO}}, {{FECHA_GENERACION}},
+  {{MODALIDAD}} (anexo 9.1), y equivalentes ${NOMBRE}, [NOMBRE], <<NOMBRE>>.
+  Alias: NOMBRE_COMPLETO, NO_CONTROL, NOMBRE_PROYECTO, etc. (mismo valor que arriba).
+
+Requisito en el servidor: LibreOffice (soffice) para convertir DOCX → PDF.
+Configura sit.soffice.path si no está soffice en el PATH (típico en Windows).
+
+El reemplazo se hace sobre el XML del .docx (no reescribe con POI) para conservar el diseño de la plantilla.

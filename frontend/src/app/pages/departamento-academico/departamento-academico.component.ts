@@ -63,6 +63,9 @@ export class DepartamentoAcademicoComponent implements OnInit {
     if (this.tabActivo === 'sinodales') {
       return 'No hay solicitudes de sinodales en este estado (o el egresado ya confirmó recibidos).';
     }
+    if (this.tabActivo === 'en_correccion') {
+      return 'No hay expedientes en corrección. Tras registrar observaciones en la revisión aparecerán aquí.';
+    }
     return 'No hay registros en esta sección.';
   }
 
@@ -108,12 +111,7 @@ export class DepartamentoAcademicoComponent implements OnInit {
   cambiarTab(tab: TabEstado): void {
     this.tabActivo = tab;
     this.filtroNumeroControl = '';
-    if (tab !== 'en_correccion') {
-      this.cargarLista();
-    } else {
-      this.lista = [];
-      this.cargando = false;
-    }
+    this.cargarLista();
   }
 
   /** Liberar (marca recibido registro y liberación). Solo Residencia Profesional; el registro pasa a Aprobados. */

@@ -93,7 +93,7 @@
     <aside class="revision-derecha">
       <button type="button" class="revision-btn-nueva" (click)="nuevaRevisionClick()">Nueva revisión</button>
 
-      <div class="revision-card">
+      <div class="revision-card" *ngIf="mostrarPanelRevision">
         <h3 class="revision-seccion-titulo">Registrar revisión</h3>
         <div class="revision-form-campo">
           <label for="observaciones" class="revision-label-obs">Observaciones</label>
@@ -126,6 +126,11 @@
         </div>
 
         <p *ngIf="mensaje" class="revision-mensaje">{{ mensaje }}</p>
+      </div>
+
+      <div class="revision-card" *ngIf="!mostrarPanelRevision">
+        <h3 class="revision-seccion-titulo">Registrar revisión</h3>
+        <p class="revision-mensaje">Documento aprobado. El panel de revisión se cerró.</p>
       </div>
 
       <div class="revision-historial">

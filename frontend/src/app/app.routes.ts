@@ -1,7 +1,13 @@
 import { Routes } from '@angular/router';
 import { authGuard, academicoGuard, coordinadorGuard, egresadoGuard } from './guards/auth.guard';
 
-/** La app siempre muestra primero el login: raíz (/) y rutas desconocidas redirigen a /login. */
+/**
+ * Enrutado SIT (titulación / residencia profesional y otras modalidades).
+ *
+ * - Coordinador: inicio → alta de egresados (`/home/alta`) y seguimiento de proceso (`/home/seguimiento-proceso`).
+ * - Académico: departamento y revisión de expedientes no residencia.
+ * - Egresado: seguimiento de su propio trámite.
+ */
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   {

@@ -15,15 +15,15 @@ import { HeaderComponent } from '../../layout/header/header.component';
         <div class="cards">
           <button type="button" class="card" (click)="irAltaEgresadosUsuarios()">
             <div class="card-texto">
-              <h2>Alta de Egresados / Usuarios</h2>
-              <p>Registrar nuevos alumnos y administrar usuarios.</p>
+              <h2>Alta de egresados y usuarios</h2>
+              <p>Registro de alumnos, documentos y usuarios del personal.</p>
             </div>
             <div class="card-icono" aria-hidden="true">Alta</div>
           </button>
           <button type="button" class="card" (click)="irSeguimientoProceso()">
             <div class="card-texto">
-              <h2>Seguimiento de proceso de titulacion</h2>
-              <p>Monitoreo del proceso de avance en titulacion.</p>
+              <h2>Seguimiento del proceso</h2>
+              <p>Envíos a académicos, anexos 9.1 / 9.3, sinodales y acto protocolario.</p>
             </div>
             <div class="card-icono" aria-hidden="true">Seg</div>
           </button>

@@ -123,7 +123,7 @@
                 <th class="departamento-th departamento-th--control" scope="col">No control</th>
                 <th class="departamento-th departamento-th--fecha" scope="col">Fecha recepción</th>
                 <th class="departamento-th departamento-th--fecha" scope="col">Última modificación</th>
-                <th class="departamento-th departamento-th--accion" scope="col">Liberar</th>
+                <th class="departamento-th departamento-th--accion" scope="col">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -153,6 +153,14 @@
                     [disabled]="liberandoId === item.id"
                   >
                     {{ liberandoId === item.id ? '…' : 'Liberar' }}
+                  </button>
+                  <button
+                    *ngIf="item.modalidad !== 'Residencia Profesional' && item.estado_revision !== 'aprobado'"
+                    type="button"
+                    class="departamento-btn-liberar"
+                    (click)="irARevision(item); $event.stopPropagation()"
+                  >
+                    Revisar
                   </button>
                 </td>
               </tr>

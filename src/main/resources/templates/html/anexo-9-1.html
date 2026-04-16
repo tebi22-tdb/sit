@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>Anexo 9.1</title>
+<style type="text/css">
+@page { size: A4; margin: 12mm 14mm; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #000; margin: 0; line-height: 1.35; }
+table.hdr { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; }
+table.hdr td, table.hdr th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
+table.hdr .logo { width: 22%; text-align: center; font-weight: bold; min-height: 56px; }
+table.hdr .meta { font-weight: bold; text-align: justify; }
+.cen { text-align: center; }
+.der { text-align: right; }
+.just { text-align: justify; }
+.tit { font-weight: bold; text-align: center; font-size: 11pt; margin: 8px 0; }
+.subtit { font-weight: bold; text-align: center; font-size: 11pt; margin: 4px 0 10px; }
+.u { text-decoration: underline; }
+.b { font-weight: bold; }
+</style>
+</head>
+<body>
+<table class="hdr">
+  <tr>
+    <td class="logo" rowspan="3">ESCUDO<br/>ITVO</td>
+    <td class="meta">Nombre del documento: Formato de Solicitud del Acto de Recepción Profesional</td>
+    <td class="meta" style="width:28%">Código: ITVO-AC-PR-05-02</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td class="meta">Revisión: 2</td>
+  </tr>
+  <tr>
+    <td class="meta">Referencia a la Norma ISO 9001-2015: 8.1, 8.5</td>
+    <td class="meta">Página 1 de 1</td>
+  </tr>
+</table>
+<p class="tit">Anexo 9.1 Formato de Solicitud del Acto de Recepción Profesional</p>
+<p class="subtit">SOLICITUD DE ACTO DE RECEPCIÓN PROFESIONAL</p>
+<p class="der">Fecha: {{FECHA_CARTA}}.</p>
+<p class="b">JEFE DEL DEPARTAMENTO DE SERVICIOS ESCOLARES</p>
+<p class="b">PRESENTE</p>
+<p class="just">&#160;</p>
+<p class="just">
+  Me permito solicitar se autorice la sustentación del Acto de Recepción Profesional por la Opción
+  <span class="b u">TITULACIÓN INTEGRAL</span> (<span class="b u">{{TEXTO_OPCION_TI}}</span>),
+  para obtener mi Título Profesional de <span class="b u">{{CARRERA}}</span>
+  en virtud de haber cubierto los requisitos indispensables para tal efecto.
+</p>
+<p class="just">&#160;</p>
+<p class="just"><span class="b">Nombre:</span> <span class="b u">{{NOMBRE}}</span></p>
+<p class="just">Firma &#160; ________________________________</p>
+<p class="just">&#160;</p>
+<p class="just"><span class="b">No. de control:</span> <span class="b u">{{NUMERO_CONTROL}}</span></p>
+<p class="just">&#160;</p>
+<p class="just"><span class="b">Carrera</span> <span class="b u">{{CARRERA}}</span></p>
+<p class="just">&#160;</p>
+<p class="just"><span class="b">Nivel</span> <span class="b u">{{NIVEL}}</span></p>
+</body>
+</html>

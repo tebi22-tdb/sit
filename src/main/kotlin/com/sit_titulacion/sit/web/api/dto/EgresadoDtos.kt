@@ -42,6 +42,11 @@ data class EgresadoListItemDto(
     val numero_control: String,
     val nombre: String,
     val carrera: String,
+    val modalidad: String,
+    @JsonProperty("fecha_creacion") val fecha_creacion: String?,
+    @JsonProperty("fecha_enviado_departamento_academico") val fecha_enviado_departamento_academico: String?,
+    @JsonProperty("fecha_actualizacion") val fecha_actualizacion: String?,
+    @JsonProperty("fecha_creacion_anexo_9_3") val fecha_creacion_anexo_9_3: String?,
 )
 
 /** Item para la lista del departamento académico (Pendientes, En corrección, Aprobados, etc.). */
@@ -109,6 +114,7 @@ data class EgresadoDetailDto(
     @JsonProperty("fecha_confirmacion_recibidos_anexo_xxxi_xxxii") val fecha_confirmacion_recibidos_anexo_xxxi_xxxii: String? = null,
     @JsonProperty("fecha_creacion_anexo_9_1") val fecha_creacion_anexo_9_1: String? = null,
     @JsonProperty("fecha_confirmacion_entrega_anexo_9_1") val fecha_confirmacion_entrega_anexo_9_1: String? = null,
+    @JsonProperty("fecha_solicitud_anexo_9_2") val fecha_solicitud_anexo_9_2: String? = null,
     @JsonProperty("fecha_creacion_anexo_9_2") val fecha_creacion_anexo_9_2: String? = null,
     @JsonProperty("fecha_confirmacion_recibido_anexo_9_2") val fecha_confirmacion_recibido_anexo_9_2: String? = null,
     @JsonProperty("fecha_solicitud_sinodales") val fecha_solicitud_sinodales: String? = null,

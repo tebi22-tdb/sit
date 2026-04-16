@@ -3,6 +3,7 @@ package com.sit_titulacion.sit.web.api
 import com.sit_titulacion.sit.config.UsuarioPrincipal
 import com.sit_titulacion.sit.repository.EgresadoRepository
 import com.sit_titulacion.sit.service.EgresadoService
+import com.sit_titulacion.sit.service.EmailService
 import com.sit_titulacion.sit.service.UsuarioService
 import com.sit_titulacion.sit.web.api.dto.DepartamentoListItemDto
 import com.sit_titulacion.sit.web.api.dto.EgresadoDetailDto
@@ -42,6 +43,7 @@ class EgresadoController(
     private val egresadoService: EgresadoService,
     private val egresadoRepository: EgresadoRepository,
     private val usuarioService: UsuarioService,
+    private val emailService: EmailService,
     private val revisionService: RevisionService,
     private val env: Environment,
 ) {
@@ -189,11 +191,92 @@ class EgresadoController(
         @RequestPart(value = "archivo", required = false) archivo: MultipartFile? = null,
     ): ResponseEntity<EgresadoResponseDto> {
         val egresado = egresadoService.crear(datos, archivo)
-        val response = EgresadoResponseDto(
-            id = egresado.id?.toString() ?: "",
-            numero_control = egresado.numero_control,
+        val idStr = egresado.id?.toString() ?: ""
+        val correo = datos.correo_electronico?.trim().orEmpty()
+
+        if (idStr.isBlank()) {
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                EgresadoResponseDto(
+                    id = "",
+                    numero_control = egresado.numero_control,
+                    credenciales_enviadas_correo = false,
+                    aviso_credenciales = "Registro guardado sin identificador; revise la base de datos.",
+                ),
+            )
+        }
+
+        val oid = ObjectId(idStr)
+        val (user, passwordPlana) = try {
+            usuarioService.crearUsuarioEgresado(egresado.numero_control.trim(), oid)
+        } catch (e: IllegalArgumentException) {
+            try {
+                usuarioService.crearOVincularUsuarioEgresado(egresado.numero_control.trim(), oid)
+            } catch (e2: Exception) {
+                log.warn(
+                    "Egresado creado pero no se pudo vincular usuario para control {}: {}",
+                    egresado.numero_control,
+                    e2.message,
+                )
+                return ResponseEntity.status(HttpStatus.CREATED).body(
+                    EgresadoResponseDto(
+                        id = idStr,
+                        numero_control = egresado.numero_control,
+                        credenciales_enviadas_correo = false,
+                        aviso_credenciales =
+                            "Egresado registrado. No se pudo crear o vincular el usuario: ${e.message ?: "error"}.",
+                    ),
+                )
+            }
+        } catch (e: Exception) {
+            log.error("Error al crear usuario egresado para id={}: {}", idStr, e.message, e)
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                EgresadoResponseDto(
+                    id = idStr,
+                    numero_control = egresado.numero_control,
+                    credenciales_enviadas_correo = false,
+                    aviso_credenciales =
+                        "Egresado registrado. Error al crear usuario: ${e.message ?: "desconocido"}.",
+                ),
+            )
+        }
+
+        var credencialesOk: Boolean?
+        var aviso: String?
+        if (passwordPlana.isBlank()) {
+            credencialesOk = false
+            aviso =
+                "Ya existía un usuario con ese número de control; se vinculó al registro. No se envían credenciales nuevas por correo."
+        } else if (correo.isBlank()) {
+            credencialesOk = false
+            aviso =
+                "Usuario creado (inicio de sesión: número de control). No se envió correo: falta correo electrónico en el registro."
+        } else {
+            try {
+                val enviado = emailService.enviarCredenciales(correo, user, passwordPlana)
+                if (enviado) {
+                    credencialesOk = true
+                    aviso = null
+                } else {
+                    credencialesOk = false
+                    aviso =
+                        "Usuario creado; no se envió correo (revise correo en el registro y configuración SMTP del servidor)."
+                }
+            } catch (e: Exception) {
+                log.error("No se pudo enviar correo de credenciales a {}: {}", correo, e.message, e)
+                credencialesOk = false
+                aviso =
+                    "Usuario creado; no se pudo enviar el correo (${e.message ?: "error SMTP"}). Comunique la contraseña por otro medio o reintente."
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            EgresadoResponseDto(
+                id = idStr,
+                numero_control = egresado.numero_control,
+                credenciales_enviadas_correo = credencialesOk,
+                aviso_credenciales = aviso,
+            ),
         )
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @PostMapping("/{id}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -268,7 +351,7 @@ class EgresadoController(
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         val bytes = egresadoService.crearAnexo91(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                mapOf("error" to "No se pudo crear anexo 9.1. Verifica que LibreOffice esté instalado y que la plantilla DOCX exista."),
+                mapOf("error" to "No se pudo generar el PDF del anexo 9.1 (plantilla HTML del sistema). Revisa los logs del servidor."),
             )
         val fileName = "Anexo-9.1-$id.pdf"
         return ResponseEntity.ok()
@@ -290,6 +373,22 @@ class EgresadoController(
         }
     }
 
+    /** División: solicita al egresado la constancia 9.2 (sin generar PDF aquí). */
+    @PostMapping("/{id}/solicitar-constancia-9-2-division")
+    fun solicitarConstancia92Division(
+        @PathVariable id: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        return if (egresadoService.solicitarConstancia92Division(id)) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                mapOf("error" to "No se pudo registrar la solicitud 9.2 (revisa entrega 9.1 o que no esté duplicada)."),
+            )
+        }
+    }
+
     @GetMapping("/{id}/anexo-9-2")
     fun descargarAnexo92(
         @PathVariable id: String,
@@ -298,7 +397,11 @@ class EgresadoController(
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         val bytes = egresadoService.crearAnexo92(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                mapOf("error" to "No se pudo crear anexo 9.2. Verifica que LibreOffice esté instalado y que la plantilla DOCX exista."),
+                mapOf(
+                    "error" to
+                        "No se pudo generar el 9.2: primero división debe usar «Solicitar constancia 9.2», " +
+                        "o falló LibreOffice/plantilla.",
+                ),
             )
         val fileName = "Anexo-9.2-$id.pdf"
         return ResponseEntity.ok()
@@ -316,7 +419,9 @@ class EgresadoController(
         return if (egresadoService.confirmarRecibidoAnexo92(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "No se pudo confirmar recibido 9.2."))
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                mapOf("error" to "No se pudo confirmar: falta la solicitud de división para la 9.2 o ya estaba confirmado."),
+            )
         }
     }
 
@@ -440,7 +545,7 @@ class EgresadoController(
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         val bytes = egresadoService.crearAnexo93(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-                mapOf("error" to "No se pudo crear anexo 9.3. Verifica que LibreOffice esté instalado y que la plantilla DOCX exista."),
+                mapOf("error" to "No se pudo generar el PDF del anexo 9.3 (plantilla HTML del sistema). Revisa los logs del servidor."),
             )
         val fileName = "Anexo-9.3-$id.pdf"
         return ResponseEntity.ok()

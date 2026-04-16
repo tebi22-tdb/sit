@@ -5,6 +5,7 @@ import com.sit_titulacion.sit.repository.EgresadoRepository
 import com.sit_titulacion.sit.repository.RevisionRepository
 import com.sit_titulacion.sit.web.api.dto.CreateRevisionRequestDto
 import com.sit_titulacion.sit.web.api.dto.RevisionDto
+import java.time.Instant
 import java.time.format.DateTimeFormatter
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
@@ -28,6 +29,25 @@ class RevisionService(
             observaciones = body.observaciones?.trim()?.takeIf { it.isNotBlank() },
         )
         val guardada = revisionRepository.save(rev)
+        if (guardada.resultado == "aprobado") {
+            val eg = egresadoRepository.findById(oid).orElse(null)
+            if (eg != null) {
+                val esResidencia =
+                    eg.datos_proyecto.modalidad.trim().equals("Residencia Profesional", ignoreCase = true)
+                if (!esResidencia &&
+                    eg.fechaEnviadoDepartamentoAcademico != null &&
+                    eg.fechaRecibidoRegistroLiberacion == null
+                ) {
+                    val ahora = Instant.now()
+                    egresadoRepository.save(
+                        eg.copy(
+                            fechaRecibidoRegistroLiberacion = ahora,
+                            fecha_actualizacion = ahora,
+                        ),
+                    )
+                }
+            }
+        }
         return toDto(guardada)
     }
 
