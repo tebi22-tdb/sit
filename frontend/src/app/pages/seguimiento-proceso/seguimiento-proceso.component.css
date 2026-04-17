@@ -68,7 +68,7 @@
 .seg-btn { height: 28px; border: 1px solid #1f68b3; background: #2f7bcb; color: #fff; border-radius: 6px; padding: 0 9px; font-size: .72rem; font-weight: 700; }
 .seg-btn:disabled { opacity: .6; cursor: not-allowed; }
 .seg-agenda-wrap { display: flex; gap: 6px; align-items: center; width: 100%; }
-.seg-input-dt { height: 28px; border: 1px solid #d1d9ea; border-radius: 6px; padding: 0 8px; font-size: .72rem; min-width: 170px; }
+.seg-input-dt { height: 28px; border: 1px solid #d1d9ea; border-radius: 6px; padding: 0 8px; font-size: .72rem; min-width: 200px; }
 .seg-agenda-ayuda { margin: 4px 0 0; color: #8a6d00; font-size: .72rem; }
 
 .seg-bloques { display: grid; grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr); gap: 10px; align-items: stretch; }

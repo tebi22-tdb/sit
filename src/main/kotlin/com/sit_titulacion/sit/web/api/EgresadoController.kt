@@ -123,7 +123,9 @@ class EgresadoController(
     /** Respaldo: obtener por número de control (evita 404 si el id en lista era de otra base). */
     @GetMapping("/por-numero/{numeroControl}")
     fun obtenerPorNumeroControl(@PathVariable numeroControl: String): ResponseEntity<*> {
+        log.info("detalle-egresado: buscando por numero_control={}", numeroControl)
         val detalle = egresadoService.obtenerPorNumeroControl(numeroControl)
+        log.info("detalle-egresado: resultado por numero_control={} encontrado={}", numeroControl, detalle != null)
         return if (detalle != null) ResponseEntity.ok(detalle)
         else ResponseEntity.notFound().build<Void>()
     }
@@ -160,7 +162,9 @@ class EgresadoController(
 
     @GetMapping("/{id}")
     fun obtenerPorId(@PathVariable id: String): ResponseEntity<*> {
+        log.info("detalle-egresado: buscando por id={}", id)
         val detalle = egresadoService.obtenerPorId(id)
+        log.info("detalle-egresado: resultado por id={} encontrado={}", id, detalle != null)
         return if (detalle != null) ResponseEntity.ok(detalle)
         else ResponseEntity.notFound().build<Void>()
     }

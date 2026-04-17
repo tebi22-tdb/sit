@@ -70,8 +70,8 @@ export class SeguimientoComponent implements OnInit {
       ? 'Tu expediente fue enviado para registro y liberación ante el departamento académico.'
       : 'Tu expediente fue enviado al departamento académico para revisión de anexos XXXI y XXXII.';
     const detallePaso3 = esRes
-      ? 'División confirmó la recepción de anexos XXXI y XXXII.'
-      : 'División confirmó la recepción de tus anexos una vez aprobado el expediente en el departamento académico.';
+      ? 'División de estudios profesionales confirmó la recepción de anexos XXXI y XXXII.'
+      : 'División de estudios profesionales confirmó la recepción de tus anexos una vez aprobado el expediente en el departamento académico.';
 
     const c1 = !!d.fecha_creacion;
     const c2 = !!d.fecha_enviado_departamento_academico;
@@ -110,30 +110,30 @@ export class SeguimientoComponent implements OnInit {
       },
       {
         numero: 4,
-        titulo: 'Recoger y firmar anexo 9.1',
-        detalle: 'Cuando división genere el formato 9.1, acude a firmarlo y completar el trámite correspondiente.',
+        titulo: 'recoger y firmar anexo 9.1',
+        detalle: 'Pasa a recoger en división de estudios profesionales para firmar el anexo 9.1.',
         fecha: fh(d.fecha_creacion_anexo_9_1),
         completado: c4,
       },
       {
         numero: 5,
-        titulo: 'Anexo 9.1 firmado recibido en división',
-        detalle: 'División confirmó la recepción de tu 9.1 firmado.',
+        titulo: 'Anexo 9.1 firmado recibido en división de estudios profesionales',
+        detalle: 'División de estudios profesionales confirmó la recepción de tu anexo 9.1 firmado.',
         fecha: fh(d.fecha_confirmacion_entrega_anexo_9_1),
         completado: c5,
       },
       {
         numero: 6,
-        titulo: 'Constancia 9.2 en servicios escolares',
+        titulo: 'solicita anexo 9.2 en servicios escolares',
         detalle:
-          'Solicita en servicios escolares la constancia 9.2 y entrégala en división de estudios profesionales cuando división indique la solicitud.',
+          'Solicita en servicios escolares el anexo 9.2 y entregarla en división de estudios profesionales para continuar con el tramite.',
         fecha: fh(d.fecha_solicitud_anexo_9_2),
         completado: c6,
       },
       {
         numero: 7,
-        titulo: 'Constancia 9.2 recibida en división',
-        detalle: 'Quedó registrada la recepción de la constancia 9.2 en división.',
+        titulo: 'Constancia 9.2 recibida en división de estudios profesionales',
+        detalle: 'Quedó registrada la recepción de la constancia 9.2 en división de estudios profesionales.',
         fecha: fh(d.fecha_confirmacion_recibido_anexo_9_2),
         completado: c7,
       },
@@ -154,14 +154,16 @@ export class SeguimientoComponent implements OnInit {
       {
         numero: 10,
         titulo: 'Acto protocolario (9.3) agendado',
-        detalle: 'Fecha y hora del acto de titulación registradas en el sistema.',
+        detalle: d.fecha_agenda_acto_9_3
+          ? `Tu acto protocolario quedó registrado para el ${fh(d.fecha_agenda_acto_9_3)}.`
+          : 'Fecha y hora del acto de titulación registradas en el sistema.',
         fecha: fh(d.fecha_agenda_acto_9_3),
         completado: c10,
       },
       {
         numero: 11,
         titulo: 'Recoger y firmar formato 9.3',
-        detalle: 'Formato del acto protocolario disponible; acude con división para recogerlo y firmar.',
+        detalle: 'Formato del acto protocolario disponible; acude con división de estudios profesionales para recogerlo y firmar.',
         fecha: fh(d.fecha_creacion_anexo_9_3),
         completado: c11,
       },

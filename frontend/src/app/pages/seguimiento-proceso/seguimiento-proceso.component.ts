@@ -1,8 +1,10 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
+import { catchError, EMPTY, finalize, of, throwError, timeout } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { mensajeErrorApiConBlob } from '../../core/http-blob-error';
 import { EgresadoService, EgresadoDetail, EgresadoItem } from '../../services/egresado.service';
@@ -64,7 +66,8 @@ interface PasoProcesoUi {
   styleUrl: './seguimiento-proceso.component.css',
 })
 export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
-  @ViewChild('fechaActoInput') fechaActoInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('fechaActo93Input') fechaActo93Input?: ElementRef<HTMLInputElement>;
+
   cargando = true;
   error = '';
   items: SeguimientoItem[] = [];
@@ -81,8 +84,14 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
   procesandoPaso = false;
   mensajeProceso = '';
   fechaActo93 = '';
-  agendaActo93Ocupados: Date[] = [];
+  /** Pasos del proceso: propiedad estable (no getter) para no destruir el DOM en cada ciclo de detección de cambios. */
+  pasosProcesoTitulacionCache: PasoProcesoUi[] = [];
+  /** Días (clave yyyy-MM-dd locales) que ya tienen acto 9.3 agendado; solo para color en flatpickr. */
+  agendaActo93OcupadosKeys = new Set<string>();
   agenda93Picker: FlatpickrInstance | null = null;
+  agenda93Cargada = false;
+  agenda93Cargando = false;
+  private detalleRequestSeq = 0;
 
   get carrerasDisponibles(): string[] {
     return [...new Set(this.items.map((i) => i.carrera))].sort((a, b) => a.localeCompare(b));
@@ -137,8 +146,7 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.agenda93Picker?.destroy();
-    this.agenda93Picker = null;
+    this.destruirAgendaActo93Picker();
   }
 
   seleccionarEstado(estado: EstadoFiltro): void {
@@ -171,26 +179,65 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
   }
 
   seleccionarEgresado(item: SeguimientoItem): void {
+    if (this.procesandoPaso) {
+      this.mensajeProceso = 'Espera a que termine la acción en curso (por ejemplo agendar o crear anexo).';
+      return;
+    }
     this.mensajeProceso = '';
     this.cargandoDetalle = true;
+    this.detalleSeleccionado = null;
+    this.pasosProcesoTitulacionCache = [];
     this.fechaActo93 = '';
-    this.agenda93Picker?.destroy();
-    this.agenda93Picker = null;
-    this.egresadoService.obtenerPorId(item.id).subscribe({
-      next: (d) => {
-        this.detalleSeleccionado = d;
+    this.destruirAgendaActo93Picker();
+    const requestSeq = ++this.detalleRequestSeq;
+    const guard = window.setTimeout(() => {
+      if (requestSeq === this.detalleRequestSeq && this.cargandoDetalle) {
         this.cargandoDetalle = false;
-        this.cargarAgendaActo93Ocupados();
-      },
-      error: () => {
-        this.detalleSeleccionado = null;
-        this.cargandoDetalle = false;
-      },
-    });
+        this.mensajeProceso = 'No se pudo cargar el detalle a tiempo. Intenta de nuevo.';
+      }
+    }, 22000);
+    this.egresadoService
+      .obtenerPorId(item.id)
+      .pipe(
+        timeout(20000),
+        // Solo usamos respaldo por numero_control si el backend responde 404 al id.
+        catchError((err) => {
+          if (err instanceof HttpErrorResponse && err.status === 404 && item.noControl?.trim()) {
+            return this.egresadoService.obtenerPorNumeroControl(item.noControl.trim()).pipe(timeout(20000));
+          }
+          return throwError(() => err);
+        }),
+        finalize(() => {
+          clearTimeout(guard);
+        }),
+      )
+      .subscribe({
+        next: (d) => {
+          if (requestSeq !== this.detalleRequestSeq) return;
+          this.detalleSeleccionado = d;
+          this.cargandoDetalle = false;
+          this.actualizarPasosProcesoTitulacion();
+        },
+        error: (err) => {
+          if (requestSeq !== this.detalleRequestSeq) return;
+          this.cargandoDetalle = false;
+          this.mensajeProceso =
+            err?.name === 'TimeoutError'
+              ? 'El servidor tardó demasiado en responder al cargar el detalle.'
+              : err?.error?.error ?? 'No se pudo cargar el detalle del egresado. Intenta de nuevo.';
+        },
+      });
   }
 
-  get pasosProcesoTitulacion(): PasoProcesoUi[] {
-    if (!this.detalleSeleccionado) return [];
+  trackByPasoNumero(_index: number, paso: PasoProcesoUi): number {
+    return paso.numero;
+  }
+
+  private actualizarPasosProcesoTitulacion(): void {
+    if (!this.detalleSeleccionado) {
+      this.pasosProcesoTitulacionCache = [];
+      return;
+    }
     const esRes = this.esResidenciaProfesionalSeguimiento;
     const steps = [
       {
@@ -216,9 +263,10 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       { key: 'fecha_agenda_acto_9_3', titulo: 'Agendar acto 9.3', descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.' },
       { key: 'fecha_creacion_anexo_9_3', titulo: 'Crear 9.3', descripcion: 'Se genera el anexo 9.3 despues del agendamiento.' },
     ] as const;
+    const d = this.detalleSeleccionado;
     let todosPreviosCompletados = true;
-    return steps.map((s, i) => {
-      const fecha = (this.detalleSeleccionado as unknown as Record<string, string | undefined>)[s.key];
+    this.pasosProcesoTitulacionCache = steps.map((s, i) => {
+      const fecha = (d as unknown as Record<string, string | undefined>)[s.key];
       const completado = !!fecha;
       const estado: EstadoPaso = completado ? 'completado' : (todosPreviosCompletados ? 'en_curso' : 'pendiente');
       if (!completado) todosPreviosCompletados = false;
@@ -246,9 +294,36 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
 
   private refrescarDetalle(): void {
     if (!this.detalleSeleccionado) return;
-    this.egresadoService.obtenerPorId(this.detalleSeleccionado.id).subscribe({
-      next: (d) => (this.detalleSeleccionado = d),
-    });
+    const id = this.detalleSeleccionado.id;
+    this.egresadoService
+      .obtenerPorId(id)
+      .pipe(
+        timeout(25000),
+        catchError((err) => {
+          const extra =
+            err?.name === 'TimeoutError'
+              ? 'El servidor tardó al refrescar el detalle.'
+              : 'No se pudo refrescar el detalle.';
+          this.mensajeProceso = this.mensajeProceso ? `${this.mensajeProceso} ${extra}` : extra;
+          return EMPTY;
+        }),
+      )
+      .subscribe({
+        next: (d) => {
+          if (this.detalleSeleccionado?.id === id) {
+            this.detalleSeleccionado = d;
+            this.actualizarPasosProcesoTitulacion();
+          }
+        },
+      });
+  }
+
+  /** Valor `YYYY-MM-DDTHH:mm` (flatpickr o datetime-local) → ISO UTC como el backend. */
+  private parseDatetimeLocalToIso(valor: string): string | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(valor.trim());
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0, 0);
+    return isNaN(d.getTime()) ? null : d.toISOString();
   }
 
   private descargarBlob(blob: Blob, nombreArchivo: string): void {
@@ -387,17 +462,35 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     if (!this.detalleSeleccionado || this.procesandoPaso) return;
     this.procesandoPaso = true;
     this.mensajeProceso = '';
-    this.egresadoService.confirmarSinodalesRecibidos(this.detalleSeleccionado.id).subscribe({
-      next: () => {
-        this.procesandoPaso = false;
-        this.mensajeProceso = 'Sinodales recibidos confirmados.';
-        this.refrescarDetalle();
-      },
-      error: (err) => {
-        this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar sinodales.';
-      },
-    });
+    this.egresadoService
+      .confirmarSinodalesRecibidos(this.detalleSeleccionado.id)
+      .pipe(
+        timeout(25000),
+        catchError((err) => {
+          if (err?.name === 'TimeoutError') {
+            return throwError(() => ({ error: { error: 'El servidor no respondió al confirmar sinodales. Intenta de nuevo.' } }));
+          }
+          return throwError(() => err);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.procesandoPaso = false;
+          this.mensajeProceso = 'Sinodales recibidos confirmados.';
+          if (this.detalleSeleccionado) {
+            this.detalleSeleccionado = {
+              ...this.detalleSeleccionado,
+              fecha_confirmacion_sinodales_recibidos: new Date().toISOString(),
+            };
+            this.actualizarPasosProcesoTitulacion();
+          }
+          this.refrescarDetalle();
+        },
+        error: (err) => {
+          this.procesandoPaso = false;
+          this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar sinodales.';
+        },
+      });
   }
 
   agendarActo93(valor: string): void {
@@ -408,19 +501,35 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     }
     this.procesandoPaso = true;
     this.mensajeProceso = '';
-    this.egresadoService.agendarActo93(this.detalleSeleccionado.id, valor).subscribe({
-      next: () => {
-        this.procesandoPaso = false;
-        this.mensajeProceso = 'Acto 9.3 agendado.';
-        this.fechaActo93 = '';
-        this.refrescarDetalle();
-        this.cargarAgendaActo93Ocupados();
-      },
-      error: (err) => {
-        this.procesandoPaso = false;
-        this.mensajeProceso = err?.error?.error ?? 'No se pudo agendar 9.3.';
-      },
-    });
+    this.egresadoService
+      .agendarActo93(this.detalleSeleccionado.id, valor)
+      .pipe(
+        timeout(25000),
+        catchError((err) => {
+          if (err?.name === 'TimeoutError') {
+            return throwError(() => ({ error: { error: 'El servidor no respondió al agendar. Revisa conexión o intenta de nuevo.' } }));
+          }
+          return throwError(() => err);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.procesandoPaso = false;
+          this.mensajeProceso = 'Acto 9.3 agendado.';
+          this.fechaActo93 = '';
+          this.destruirAgendaActo93Picker();
+          const iso = this.parseDatetimeLocalToIso(valor);
+          if (iso && this.detalleSeleccionado) {
+            this.detalleSeleccionado = { ...this.detalleSeleccionado, fecha_agenda_acto_9_3: iso };
+            this.actualizarPasosProcesoTitulacion();
+          }
+          this.refrescarDetalle();
+        },
+        error: (err) => {
+          this.procesandoPaso = false;
+          this.mensajeProceso = err?.error?.error ?? 'No se pudo agendar 9.3.';
+        },
+      });
   }
 
   crearDescargar93(): void {
@@ -530,26 +639,71 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
   }
 
   abrirCalendarioActo93(): void {
-    this.initAgendaActo93Picker();
-    this.agenda93Picker?.open();
+    const abrirPicker = (): void => {
+      window.setTimeout(() => {
+        this.initAgendaActo93Picker();
+        this.agenda93Picker?.open();
+      }, 0);
+    };
+
+    if (!this.agenda93Cargada && !this.agenda93Cargando) {
+      this.agenda93Cargando = true;
+      this.egresadoService
+        .getAgendaActo93Ocupados()
+        .pipe(
+          timeout(12000),
+          catchError(() => of({ ocupados: [] as string[] })),
+          finalize(() => {
+            this.agenda93Cargando = false;
+            this.agenda93Cargada = true;
+          }),
+        )
+        .subscribe({
+          next: (res) => {
+            this.rellenarClavesOcupadasAgenda93(res);
+            abrirPicker();
+          },
+        });
+      return;
+    }
+
+    if (this.agenda93Picker) {
+      window.setTimeout(() => {
+        this.agenda93Picker?.open();
+        this.pintarDiasOcupadosEnFlatpickr(this.agenda93Picker!);
+      }, 0);
+      return;
+    }
+
+    abrirPicker();
   }
 
-  private cargarAgendaActo93Ocupados(): void {
-    this.egresadoService.getAgendaActo93Ocupados().subscribe({
-      next: (res) => {
-        this.agendaActo93Ocupados = (res?.ocupados ?? [])
-          .map((s) => new Date(s))
-          .filter((d) => !isNaN(d.getTime()));
-        this.initAgendaActo93Picker();
-      },
-      error: () => {
-        this.agendaActo93Ocupados = [];
-      },
+  private rellenarClavesOcupadasAgenda93(res: { ocupados?: string[] }): void {
+    const fechas = (res?.ocupados ?? [])
+      .map((s) => new Date(s))
+      .filter((d) => !isNaN(d.getTime()));
+    this.agendaActo93OcupadosKeys = new Set(fechas.map((d) => this.toLocalDateKey(d)));
+  }
+
+  /** Repinta amarillo: onDayCreate a veces corre antes de tener claves; redraw no siempre vuelve a crear celdas. */
+  private pintarDiasOcupadosEnFlatpickr(fp: FlatpickrInstance): void {
+    const root = fp.daysContainer;
+    if (!root) return;
+    root.querySelectorAll('.flatpickr-day').forEach((node) => {
+      const el = node as HTMLElement & { dateObj?: Date };
+      if (el.classList.contains('flatpickr-disabled')) return;
+      el.classList.remove('agenda-dia-ocupado');
+      const dateObj = el.dateObj;
+      if (!dateObj) return;
+      if (this.agendaActo93OcupadosKeys.has(this.toLocalDateKey(dateObj))) {
+        el.classList.add('agenda-dia-ocupado');
+        el.title = 'Ya hay acto protocolario agendado este día';
+      }
     });
   }
 
   private initAgendaActo93Picker(): void {
-    const el = this.fechaActoInput?.nativeElement;
+    const el = this.fechaActo93Input?.nativeElement;
     if (!el) return;
     this.agenda93Picker?.destroy();
     this.agenda93Picker = flatpickr(el, {
@@ -563,21 +717,22 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       onChange: (_dates, dateStr) => {
         this.fechaActo93 = dateStr;
       },
-      onDayCreate: (_dObj, _dStr, _fp, dayElem) => {
+      onDayCreate: (_dObj, _dStr, fp, dayElem) => {
         const dateObj = (dayElem as unknown as { dateObj?: Date }).dateObj;
         if (!dateObj) return;
         const key = this.toLocalDateKey(dateObj);
-        if (this.diasOcupadosAgenda93.includes(key)) {
+        if (this.agendaActo93OcupadosKeys.has(key)) {
           dayElem.classList.add('agenda-dia-ocupado');
-          dayElem.title = 'Ya hay acto agendado este día';
+          dayElem.title = 'Ya hay acto protocolario agendado este día';
         }
       },
+      onOpen: (_d, _s, fp) => {
+        window.requestAnimationFrame(() => this.pintarDiasOcupadosEnFlatpickr(fp));
+      },
+      onMonthChange: (_d, _s, fp) => {
+        window.requestAnimationFrame(() => this.pintarDiasOcupadosEnFlatpickr(fp));
+      },
     });
-  }
-
-  private get diasOcupadosAgenda93(): string[] {
-    const set = new Set(this.agendaActo93Ocupados.map((d) => this.toLocalDateKey(d)));
-    return [...set];
   }
 
   private toLocalDateKey(d: Date): string {
@@ -585,6 +740,14 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  private destruirAgendaActo93Picker(): void {
+    this.agenda93Picker?.destroy();
+    this.agenda93Picker = null;
+    this.agendaActo93OcupadosKeys.clear();
+    this.agenda93Cargada = false;
+    this.agenda93Cargando = false;
   }
 }
 

@@ -321,7 +321,12 @@ class EgresadoService(
         } catch (_: Exception) {
             return null
         }
-        return egresadoRepository.findById(objectId).orElse(null)?.let { toDetailDto(it) }
+        return try {
+            egresadoRepository.findByObjectIdConTimeout(objectId)?.let { toDetailDto(it) }
+        } catch (e: Exception) {
+            log.warn("obtenerPorId: timeout/error consultando id={}: {}", id, e.message)
+            null
+        }
     }
 
     /** Obtener por número de control (respaldo cuando el id de la lista no coincide). */
@@ -570,10 +575,21 @@ class EgresadoService(
         return true
     }
 
-    fun listarActo93Ocupados(): List<Instant> =
-        egresadoRepository.findConActo93Agendado()
-            .mapNotNull { it.fechaAgendaActo93 }
-            .sorted()
+    fun listarActo93Ocupados(): List<Instant> {
+        val zona = ZoneId.systemDefault()
+        val inicio = LocalDate.now(zona).minusMonths(1).atStartOfDay(zona).toInstant()
+        val fin = LocalDate.now(zona).plusYears(2).atStartOfDay(zona).toInstant()
+        return try {
+            egresadoRepository.findActo93AgendadoEnRango(inicio, fin)
+                .mapNotNull { it.fechaAgendaActo93 }
+                .distinct()
+                .sorted()
+                .take(1500)
+        } catch (e: Exception) {
+            log.warn("listarActo93Ocupados: timeout/error consultando agenda 9.3: {}", e.message)
+            emptyList()
+        }
+    }
 
     private fun toDetailDto(e: Egresado): EgresadoDetailDto {
         val p = e.datos_personales
@@ -664,7 +680,12 @@ class EgresadoService(
         } catch (_: Exception) {
             return null
         }
-        return egresadoRepository.findById(objectId).orElse(null)
+        return try {
+            egresadoRepository.findByObjectIdConTimeout(objectId)
+        } catch (e: Exception) {
+            log.warn("cargarEgresadoPorId: timeout/error consultando id={}: {}", id, e.message)
+            null
+        }
     }
 
     private fun esResidenciaProfesional(e: Egresado): Boolean =

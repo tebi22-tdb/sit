@@ -90,7 +90,7 @@
         <div *ngIf="!cargandoDetalle && detalleSeleccionado" class="seg-proceso-lista">
           <div
             class="seg-proceso-item"
-            *ngFor="let paso of pasosProcesoTitulacion"
+            *ngFor="let paso of pasosProcesoTitulacionCache; trackBy: trackByPasoNumero"
             [class.seg-proceso-item-curso]="paso.estado === 'en_curso'"
             [class.seg-proceso-item-ok]="paso.estado === 'completado'"
           >
@@ -114,18 +114,19 @@
               <button *ngIf="paso.numero === 8 && detalleSeleccionado.fecha_asignacion_sinodales && !detalleSeleccionado.fecha_confirmacion_sinodales_recibidos" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarSinodalesRecibidos()">Confirmar</button>
               <div *ngIf="paso.numero === 9 && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-wrap">
                 <input
-                  #fechaActoInput
+                  #fechaActo93Input
                   type="text"
                   class="seg-input-dt"
                   name="fechaActo93"
-                  placeholder="Selecciona fecha y hora"
+                  placeholder="Clic para elegir fecha y hora"
                   [(ngModel)]="fechaActo93"
-                  (focus)="abrirCalendarioActo93()"
+                  readonly
+                  (click)="abrirCalendarioActo93()"
                 />
                 <button type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="agendarActo93(fechaActo93)">Agendar</button>
               </div>
               <p *ngIf="paso.numero === 9 && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-ayuda">
-                Los días resaltados en amarillo ya tienen acto protocolario agendado.
+                Los días en amarillo ya tienen acto protocolario agendado (mismo día). Lunes a viernes, 10:00–14:00.
               </p>
               <button *ngIf="paso.numero === 10 && detalleSeleccionado.fecha_agenda_acto_9_3 && !detalleSeleccionado.fecha_creacion_anexo_9_3" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar93()">Crear 9.3</button>
             </div>

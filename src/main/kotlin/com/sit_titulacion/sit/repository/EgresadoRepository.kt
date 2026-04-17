@@ -3,6 +3,7 @@ package com.sit_titulacion.sit.repository
 import com.sit_titulacion.sit.domain.Egresado
 import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.data.mongodb.repository.Meta
 import org.springframework.data.mongodb.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -10,6 +11,13 @@ import java.time.Instant
 @Repository
 interface EgresadoRepository : MongoRepository<Egresado, ObjectId> {
 
+    /** Búsqueda puntual por _id con límite de tiempo de ejecución en Mongo. */
+    @Meta(maxExecutionTimeMs = 5000)
+    @Query("{ '_id' : ?0 }")
+    fun findByObjectIdConTimeout(id: ObjectId): Egresado?
+
+    /** Búsqueda por número de control con límite de tiempo. */
+    @Meta(maxExecutionTimeMs = 5000)
     @Query("{ 'numero_control' : ?0 }")
     fun findByNumeroControl(numeroControl: String): Egresado?
 
@@ -52,4 +60,13 @@ interface EgresadoRepository : MongoRepository<Egresado, ObjectId> {
     /** Todas las fechas ya agendadas del acto 9.3 (para pintar ocupados en frontend). */
     @Query(value = "{ 'fecha_agenda_acto_9_3' : { \$exists: true, \$ne: null } }", sort = "{ 'fecha_agenda_acto_9_3' : 1 }")
     fun findConActo93Agendado(): List<Egresado>
+
+    /** Fechas agendadas en una ventana acotada para el calendario (solo campo necesario, con timeout). */
+    @Meta(maxExecutionTimeMs = 4000)
+    @Query(
+        value = "{ 'fecha_agenda_acto_9_3' : { \$gte: ?0, \$lt: ?1 } }",
+        fields = "{ 'fecha_agenda_acto_9_3' : 1 }",
+        sort = "{ 'fecha_agenda_acto_9_3' : 1 }",
+    )
+    fun findActo93AgendadoEnRango(inicioInclusivo: Instant, finExclusivo: Instant): List<Egresado>
 }
