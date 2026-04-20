@@ -2,6 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import flatpickr from 'flatpickr';
 import { Instance as FlatpickrInstance } from 'flatpickr/dist/types/instance';
 import { catchError, EMPTY, finalize, of, throwError, timeout } from 'rxjs';
@@ -139,7 +140,10 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     return out;
   }
 
-  constructor(private egresadoService: EgresadoService) {}
+  constructor(
+    private egresadoService: EgresadoService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -151,6 +155,10 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
 
   seleccionarEstado(estado: EstadoFiltro): void {
     this.filtroEstado = estado;
+  }
+
+  volverInicio(): void {
+    this.router.navigate(['/home']);
   }
 
   esEstadoActivo(estado: EstadoFiltro): boolean {
@@ -242,26 +250,26 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     const steps = [
       {
         key: 'fecha_enviado_departamento_academico',
-        titulo: 'Solicitud de anexo XXXI y XXXII',
+        titulo: 'Enviar a Anexos XXXI y XXXII revisión académica',
         descripcion: esRes
           ? 'Se registra el envío al departamento académico para revisión inicial.'
-          : 'Se envía al departamento académico para revisión del expediente (anexo XXXI y XXXII).',
+          : 'El expediente se envía al departamento académico para revisión.',
       },
       {
         key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
-        titulo: 'Recibidos anexo XXXI y XXXII',
+        titulo: 'Recibidos revisión académica de Anexos XXXI y XXXII',
         descripcion: esRes
-          ? 'Se confirma recepción de anexo XXXI y XXXII.'
-          : 'División confirma recepción una vez aprobado el expediente en el departamento académico.',
+          ? 'Se confirma recepción del dictamen de revisión académica (aprobado).'
+          : 'División confirma la recepción del dictamen de revisión académica (aprobado).',
       },
-      { key: 'fecha_creacion_anexo_9_1', titulo: 'Crear 9.1', descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulacion.' },
+      { key: 'fecha_creacion_anexo_9_1', titulo: 'Crear anexo 9.1', descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulacion.' },
       { key: 'fecha_confirmacion_entrega_anexo_9_1', titulo: 'Entrega de anexo 9.1', descripcion: 'El egresado confirma entrega del anexo 9.1.' },
-      { key: 'fecha_solicitud_anexo_9_2', titulo: 'Solicitar 9.2 al egresado', descripcion: 'División registra la solicitud de entrega de la constancia 9.2.' },
-      { key: 'fecha_confirmacion_recibido_anexo_9_2', titulo: 'Recibido 9.2', descripcion: 'Se confirma la recepcion de la constancia 9.2 (división o egresado).' },
+      { key: 'fecha_solicitud_anexo_9_2', titulo: 'Solicitar anexo 9.2 al egresado', descripcion: 'División registra la solicitud de entrega de la constancia 9.2.' },
+      { key: 'fecha_confirmacion_recibido_anexo_9_2', titulo: 'Recibido anexo 9.2', descripcion: 'Se confirma la recepcion de la constancia 9.2 (división o egresado).' },
       { key: 'fecha_solicitud_sinodales', titulo: 'Solicitud de sinodales', descripcion: 'Se solicita la asignacion del tribunal de sinodales.' },
       { key: 'fecha_confirmacion_sinodales_recibidos', titulo: 'Recibimos sinodales', descripcion: 'Se confirma que el egresado recibio la asignacion de sinodales.' },
       { key: 'fecha_agenda_acto_9_3', titulo: 'Agendar acto 9.3', descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.' },
-      { key: 'fecha_creacion_anexo_9_3', titulo: 'Crear 9.3', descripcion: 'Se genera el anexo 9.3 despues del agendamiento.' },
+      { key: 'fecha_creacion_anexo_9_3', titulo: 'Crear anexo 9.3', descripcion: 'Se genera el anexo 9.3 despues del agendamiento.' },
     ] as const;
     const d = this.detalleSeleccionado;
     let todosPreviosCompletados = true;
@@ -359,7 +367,7 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     this.egresadoService.confirmarRecibidosAnexosXxxiXxxii(this.detalleSeleccionado.id).subscribe({
       next: () => {
         this.procesandoPaso = false;
-        this.mensajeProceso = 'Recibidos XXXI/XXXII confirmados.';
+        this.mensajeProceso = 'Recibidos XXXII/XXXIII confirmados.';
         this.refrescarDetalle();
       },
       error: (err) => {

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../layout/header/header.component';
+import { AuthService } from '../../services/auth.service';
+import { obtenerSegmentoAcademicoDef } from '../../core/segmentos-academicos';
 import { EgresadoService, DepartamentoListItem, DepartamentoCounts } from '../../services/egresado.service';
 
 type TabEstado = 'pendientes' | 'en_correccion' | 'aprobados' | 'sinodales' | 'todos';
@@ -15,6 +17,8 @@ type TabEstado = 'pendientes' | 'en_correccion' | 'aprobados' | 'sinodales' | 't
 })
 export class DepartamentoAcademicoComponent implements OnInit {
   tabActivo: TabEstado = 'pendientes';
+  tituloDepartamento = 'Departamento académico';
+  esModoRevision = false;
   counts: DepartamentoCounts = { pendientes: 0, en_correccion: 0, aprobados: 0, todos: 0, sinodales_por_asignar: 0 };
   lista: DepartamentoListItem[] = [];
   cargando = true;
@@ -38,6 +42,7 @@ export class DepartamentoAcademicoComponent implements OnInit {
 
   constructor(
     private egresadoService: EgresadoService,
+    private authService: AuthService,
     private router: Router,
   ) {}
 
@@ -60,11 +65,11 @@ export class DepartamentoAcademicoComponent implements OnInit {
     if (this.tabActivo === 'todos' && this.filtroNumeroControl.trim()) {
       return 'No se encontró ningún registro con ese número de control.';
     }
-    if (this.tabActivo === 'sinodales') {
-      return 'No hay solicitudes de sinodales en este estado (o el egresado ya confirmó recibidos).';
+    if (this.esModoRevision && this.tabActivo === 'en_correccion') {
+      return 'No hay expedientes en corrección.';
     }
-    if (this.tabActivo === 'en_correccion') {
-      return 'No hay expedientes en corrección. Tras registrar observaciones en la revisión aparecerán aquí.';
+    if (this.tabActivo === 'sinodales') {
+      return 'No hay registros de sinodales para mostrar.';
     }
     return 'No hay registros en esta sección.';
   }
@@ -74,6 +79,10 @@ export class DepartamentoAcademicoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const usuario = this.authService.getUsuario();
+    const segmento = obtenerSegmentoAcademicoDef(usuario?.segmento_academico ?? '');
+    this.esModoRevision = !segmento && !(usuario?.carreras_asignadas?.length ?? 0);
+    this.tituloDepartamento = this.esModoRevision ? 'Departamento académico' : (segmento?.nombre ?? 'Departamento académico');
     this.cargarCounts();
     this.cargarLista();
   }
@@ -109,6 +118,7 @@ export class DepartamentoAcademicoComponent implements OnInit {
   }
 
   cambiarTab(tab: TabEstado): void {
+    if (this.esModoRevision && tab === 'sinodales') return;
     this.tabActivo = tab;
     this.filtroNumeroControl = '';
     this.cargarLista();

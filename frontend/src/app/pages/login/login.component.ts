@@ -34,10 +34,8 @@ export class LoginComponent {
         this.loading = false;
         const rol = (user?.rol ?? '').toLowerCase();
         if (rol === 'servicios_escolares') {
-          this.auth.logout().subscribe();
-          return;
-        }
-        if (rol === 'academico') {
+          this.router.navigate(['/servicios-escolares']);
+        } else if (rol === 'academico') {
           this.router.navigate(['/departamento-academico']);
         } else if (this.auth.isCoordinador()) {
           this.router.navigate(['/home']);

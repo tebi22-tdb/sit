@@ -16,7 +16,13 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-data class UsuarioActualDto(val username: String, val rol: String)
+data class UsuarioActualDto(
+    val username: String,
+    val rol: String,
+    val nombre: String? = null,
+    val segmento_academico: String? = null,
+    val carreras_asignadas: List<String> = emptyList(),
+)
 data class HashRequest(val password: String? = null)
 data class HashResponse(val hash: String)
 data class LoginRequest(val username: String = "", val password: String = "")
@@ -48,6 +54,9 @@ class AuthController(
                 mapOf(
                     "username" to principal.username,
                     "rol" to principal.getRol(),
+                    "nombre" to principal.getNombre(),
+                    "segmento_academico" to principal.getSegmentoAcademico(),
+                    "carreras_asignadas" to principal.getCarrerasAsignadas(),
                     "access_token" to token,
                 ),
             )
@@ -81,6 +90,9 @@ class AuthController(
         return ResponseEntity.ok(UsuarioActualDto(
             username = auth.username,
             rol = auth.getRol(),
+            nombre = auth.getNombre(),
+            segmento_academico = auth.getSegmentoAcademico(),
+            carreras_asignadas = auth.getCarrerasAsignadas(),
         ))
     }
 }

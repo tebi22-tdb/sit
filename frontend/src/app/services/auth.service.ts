@@ -8,6 +8,9 @@ export const SIT_ACCESS_TOKEN_KEY = 'sit_access_token';
 export interface UsuarioActual {
   username: string;
   rol: string;
+  nombre?: string;
+  segmento_academico?: string;
+  carreras_asignadas?: string[];
 }
 
 interface LoginResponse extends UsuarioActual {
@@ -22,6 +25,8 @@ export interface CrearUsuarioBody {
   rol: string;
   correo_electronico: string;
   curp: string;
+  segmento_academico?: string;
+  carreras_asignadas?: string[];
 }
 
 export interface UsuarioStaffItem {
@@ -31,6 +36,8 @@ export interface UsuarioStaffItem {
   rol: string;
   curp?: string;
   correo_electronico?: string;
+  segmento_academico?: string;
+  carreras_asignadas?: string[];
   activo: boolean;
 }
 
@@ -48,9 +55,19 @@ export class AuthService {
       .pipe(
         tap((res) => {
           sessionStorage.setItem(SIT_ACCESS_TOKEN_KEY, res.access_token);
-          this.usuario = { username: res.username, rol: res.rol };
+          this.usuario = {
+            username: res.username,
+            rol: res.rol,
+            nombre: res.nombre,
+            segmento_academico: res.segmento_academico,
+          };
         }),
-        map((res) => ({ username: res.username, rol: res.rol })),
+        map((res) => ({
+          username: res.username,
+          rol: res.rol,
+          nombre: res.nombre,
+          segmento_academico: res.segmento_academico,
+        })),
       );
   }
 
@@ -84,7 +101,18 @@ export class AuthService {
 
   isCoordinador(): boolean {
     const r = this.usuario?.rol?.toLowerCase();
-    return r === 'coordinador' || r === 'apoyo_titulacion' || r === 'apoyo titulacion';
+    return (
+      r === 'coordinador' ||
+      r === 'apoyo_titulacion' ||
+      r === 'apoyo titulacion' ||
+      r === 'division_estudios_prof_admin'
+    );
+  }
+
+  /** Listar/crear usuarios staff: coordinador o división administrativa (no apoyo a titulación). */
+  puedeAdministrarUsuariosStaff(): boolean {
+    const r = this.usuario?.rol?.toLowerCase();
+    return r === 'coordinador' || r === 'division_estudios_prof_admin';
   }
 
   isEgresado(): boolean {

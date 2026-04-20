@@ -50,7 +50,7 @@ export const coordinadorGuard: CanActivateFn = (route, state) => {
     map((user) => {
       const rol = auth.getUsuario()?.rol?.toLowerCase();
       if (rol === 'servicios_escolares') {
-        router.navigate(['/login']);
+        router.navigate(['/servicios-escolares']);
         return false;
       }
       if (auth.isAcademico()) {

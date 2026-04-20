@@ -30,4 +30,10 @@ class UsuarioPrincipal(private val usuario: Usuario) : UserDetails {
     fun getRol(): String = usuario.rol
 
     fun getEgresadoId(): org.bson.types.ObjectId? = usuario.egresadoId
+
+    fun getNombre(): String? = usuario.nombre
+
+    fun getSegmentoAcademico(): String? = usuario.segmentoAcademico
+
+    fun getCarrerasAsignadas(): List<String> = usuario.carrerasAsignadas
 }

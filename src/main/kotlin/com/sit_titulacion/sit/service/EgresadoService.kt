@@ -10,6 +10,7 @@ import com.sit_titulacion.sit.domain.Egresado
 import com.sit_titulacion.sit.domain.HistorialEstado
 import com.sit_titulacion.sit.domain.SinodalesTribunal
 import com.sit_titulacion.sit.repository.EgresadoRepository
+import com.sit_titulacion.sit.repository.UsuarioRepository
 import com.sit_titulacion.sit.web.api.dto.AnexoDto
 import com.sit_titulacion.sit.web.api.dto.DepartamentoListItemDto
 import com.sit_titulacion.sit.web.api.dto.ConstanciaDto
@@ -62,6 +63,7 @@ data class DocumentoStream(
 @Service
 class EgresadoService(
     private val egresadoRepository: EgresadoRepository,
+    private val usuarioRepository: UsuarioRepository,
     private val gridFsTemplate: GridFsTemplate,
     private val env: Environment,
     private val htmlAnexoPdfService: HtmlAnexoPdfService,
@@ -252,8 +254,9 @@ class EgresadoService(
         @Suppress("UNUSED_PARAMETER") tipoFiltro: String?,
     ): List<EgresadoListItemDto> = listarParaLista(numeroControlFilter)
 
-    fun contarParaDepartamento(): Map<String, Int> {
-        val all = egresadoRepository.findAll()
+    fun contarParaDepartamento(academicoUsername: String): Map<String, Int> {
+        val allBase = filtrarEgresadosPorCarreraSiAcademico(egresadoRepository.findAll(), academicoUsername)
+        val all = if (esAcademicoSoloRevisiones(academicoUsername)) allBase.filter { !esResidenciaProfesional(it) } else allBase
         val pendientes = all.count {
             it.fechaEnviadoDepartamentoAcademico != null &&
                 it.fechaRecibidoRegistroLiberacion == null &&
@@ -276,12 +279,21 @@ class EgresadoService(
         )
     }
 
-    fun listarParaDepartamento(estado: String): List<DepartamentoListItemDto> {
-        val all = egresadoRepository.findAll()
+    fun listarParaDepartamento(estado: String, academicoUsername: String): List<DepartamentoListItemDto> {
+        val allBase = filtrarEgresadosPorCarreraSiAcademico(egresadoRepository.findAll(), academicoUsername)
+        val all = if (esAcademicoSoloRevisiones(academicoUsername)) allBase.filter { !esResidenciaProfesional(it) } else allBase
         val norm = estado.trim().lowercase()
         val lista = when (norm) {
             "aprobados" -> all.filter { it.fechaRecibidoRegistroLiberacion != null }
-            "sinodales" -> all.filter { it.fechaSolicitudSinodales != null && it.fechaConfirmacionSinodalesRecibidos == null }
+            "sinodales" ->
+                all
+                    .filter { it.fechaSolicitudSinodales != null }
+                    // Primero historial pendiente (sin asignar), luego los ya asignados.
+                    .sortedWith(
+                        compareBy<Egresado> { it.fechaAsignacionSinodales != null }
+                            .thenByDescending { it.fechaSolicitudSinodales ?: Instant.EPOCH }
+                            .thenByDescending { it.fecha_actualizacion },
+                    )
             "todos" -> all.filter { it.fechaEnviadoDepartamentoAcademico != null }
             "en_correccion" -> all.filter {
                 it.fechaEnviadoDepartamentoAcademico != null &&
@@ -313,6 +325,53 @@ class EgresadoService(
                 sinodalesAsignados = e.fechaAsignacionSinodales != null,
             )
         }
+    }
+
+    /**
+     * Usuario con rol `academico` y lista `carreras_asignadas` no vacía solo ve egresados de esas carreras.
+     * Si la lista está vacía (usuarios antiguos), no se filtra.
+     */
+    fun academicoPuedeAccederAEgresado(academicoUsername: String, egresadoId: String): Boolean {
+        if (esAcademicoSoloRevisiones(academicoUsername)) {
+            val e = cargarEgresadoPorId(egresadoId) ?: return false
+            if (esResidenciaProfesional(e)) return false
+        }
+        val permitidas = carrerasFiltroAcademico(academicoUsername) ?: return true
+        if (permitidas.isEmpty()) return true
+        val e = cargarEgresadoPorId(egresadoId) ?: return false
+        return carreraPermitidaParaAcademico(e.datos_personales.carrera, permitidas)
+    }
+
+    private fun filtrarEgresadosPorCarreraSiAcademico(egresados: List<Egresado>, academicoUsername: String): List<Egresado> {
+        val permitidas = carrerasFiltroAcademico(academicoUsername) ?: return egresados
+        if (permitidas.isEmpty()) return egresados
+        return egresados.filter { carreraPermitidaParaAcademico(it.datos_personales.carrera, permitidas) }
+    }
+
+    /** Conjunto de carreras asignadas al académico, o null si no aplica filtro. */
+    private fun carrerasFiltroAcademico(username: String): Set<String>? {
+        val u = usuarioRepository.findByUsername(username.trim()) ?: return null
+        if (!u.rol.trim().equals("academico", ignoreCase = true)) return null
+        val permitidas = u.carrerasAsignadas.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        return if (permitidas.isEmpty()) null else permitidas
+    }
+
+    /**
+     * Académico general (sin segmento/carreras): solo trabaja expedientes de revisión académica
+     * de modalidades distintas a Residencia Profesional.
+     */
+    private fun esAcademicoSoloRevisiones(username: String): Boolean {
+        val u = usuarioRepository.findByUsername(username.trim()) ?: return false
+        if (!u.rol.trim().equals("academico", ignoreCase = true)) return false
+        val sinSegmento = u.segmentoAcademico?.trim().isNullOrEmpty()
+        val sinCarreras = u.carrerasAsignadas.isEmpty()
+        return sinSegmento && sinCarreras
+    }
+
+    private fun carreraPermitidaParaAcademico(carrera: String, permitidas: Set<String>): Boolean {
+        val c = carrera.trim()
+        if (c.isEmpty()) return false
+        return permitidas.any { perm -> perm.equals(c, ignoreCase = true) }
     }
 
     fun obtenerPorId(id: String): EgresadoDetailDto? {
@@ -407,6 +466,8 @@ class EgresadoService(
         if (e.fechaCreacionAnexo91 == null) {
             egresadoRepository.save(e.copy(fechaCreacionAnexo91 = ahora, fecha_actualizacion = ahora))
         }
+        val destinatarioServicios =
+            env.getProperty("sit.anexo91.destinatario-servicios-escolares")?.trim().orEmpty()
         val valores =
             construirValoresPlantillaHtml(
                 e,
@@ -414,6 +475,8 @@ class EgresadoService(
                     "MODALIDAD" to e.datos_proyecto.modalidad,
                     "FECHA_CARTA" to fechaCartaEspanola(ahora),
                     "TEXTO_OPCION_TI" to textoOpcionTitulacionIntegral(e.datos_proyecto.modalidad),
+                    "DESTINATARIO_SERVICIOS_ESCOLARES" to
+                        if (destinatarioServicios.isEmpty()) "\u200B" else destinatarioServicios,
                 ),
             )
         return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-1.html", valores)
@@ -524,15 +587,18 @@ class EgresadoService(
         val actoLegible = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(zona).format(acto)
         val zActo = acto.atZone(zona)
         val diaActo = zActo.dayOfMonth.toString().padStart(2, '0')
-        val mesActo = nombreMesEspanol(zActo.monthValue)
+        val mesActo =
+            nombreMesEspanol(zActo.monthValue).uppercase(Locale.forLanguageTag("es-MX"))
         val anioActo = zActo.year.toString()
         val horaActo = String.format(Locale.ROOT, "%02d:%02d", zActo.hour, zActo.minute)
+        val jefeDivisionNombre =
+            env.getProperty("sit.anexo93.jefe-division-nombre", "HIBER YAIR AMBROCIO LÓPEZ").trim()
         val valores =
             construirValoresPlantillaHtml(
                 e,
                 listOf(
                     "ACTO_93" to actoLegible,
-                    "FECHA_CARTA" to fechaCartaEspanola(Instant.now()),
+                    "FECHA_CARTA" to fechaCartaEspanolaAnexo93(Instant.now()),
                     "TEXTO_OPCION_TI" to textoOpcionTitulacionIntegral(e.datos_proyecto.modalidad),
                     "ACTO_DIA" to diaActo,
                     "ACTO_MES" to mesActo,
@@ -542,6 +608,7 @@ class EgresadoService(
                     "SECRETARIO" to (e.sinodalesTribunal?.secretario ?: ""),
                     "VOCAL" to (e.sinodalesTribunal?.vocal ?: ""),
                     "VOCAL_SUPLENTE" to (e.sinodalesTribunal?.vocal_suplente ?: ""),
+                    "JEFE_DIVISION_NOMBRE" to jefeDivisionNombre,
                 ),
             )
         return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-3.html", valores)
@@ -731,8 +798,16 @@ class EgresadoService(
 
     private fun fechaCartaEspanola(instant: Instant): String {
         val z = instant.atZone(ZoneId.systemDefault())
-        val mes = nombreMesEspanol(z.monthValue)
+        val mes = nombreMesEspanol(z.monthValue).uppercase(Locale.forLanguageTag("es-MX"))
         return "${z.dayOfMonth} de $mes de ${z.year}"
+    }
+
+    /** Fecha en encabezado del Anexo 9.3: “01 de Julio del 2021” (mes en formato título, “del” antes del año). */
+    private fun fechaCartaEspanolaAnexo93(instant: Instant): String {
+        val z = instant.atZone(ZoneId.systemDefault())
+        val mes = nombreMesEspanol(z.monthValue)
+        val dia = z.dayOfMonth.toString().padStart(2, '0')
+        return "$dia de $mes del ${z.year}"
     }
 
     private fun nombreMesEspanol(monthValue1to12: Int): String {

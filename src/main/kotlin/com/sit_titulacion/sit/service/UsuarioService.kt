@@ -64,7 +64,7 @@ class UsuarioService(
 
     /**
      * Crea un usuario de personal (coordinador, académico, servicios escolares).
-     * usernameLogin se usa para iniciar sesión (ej. el correo); se guarda y se envía por correo la contraseña.
+     * Permite repetir correo; el username de acceso siempre se vuelve único.
      */
     fun crearUsuarioStaff(
         nombre: String,
@@ -72,6 +72,8 @@ class UsuarioService(
         rol: String,
         correoElectronico: String,
         curp: String,
+        segmentoAcademico: String? = null,
+        carrerasAsignadas: List<String> = emptyList(),
     ): Pair<String, String> {
         val userTrim = usernameLogin.trim()
         val correoTrim = correoElectronico.trim()
@@ -79,28 +81,38 @@ class UsuarioService(
         if (userTrim.isBlank()) throw IllegalArgumentException("El usuario (para iniciar sesión) es obligatorio.")
         if (correoTrim.isBlank()) throw IllegalArgumentException("El correo electrónico es obligatorio.")
         if (curpNorm.isBlank()) throw IllegalArgumentException("La CURP es obligatoria.")
-        if (usuarioRepository.existsByUsername(userTrim)) {
-            throw IllegalArgumentException("Ya existe un usuario con ese correo/usuario: $userTrim")
-        }
+        val usernameUnico = generarUsernameStaffUnico(userTrim)
         val passwordPlana = generarPasswordSegura()
         val passwordHash = passwordEncoder.encode(passwordPlana) ?: ""
         val usuario = Usuario(
-            username = userTrim,
+            username = usernameUnico,
             passwordHash = passwordHash,
             rol = rol,
             egresadoId = null,
             nombre = nombre.trim().takeIf { it.isNotBlank() },
             curp = curpNorm,
             correoElectronico = correoTrim,
+            segmentoAcademico = segmentoAcademico,
+            carrerasAsignadas = carrerasAsignadas,
             activo = true,
         )
         usuarioRepository.save(usuario)
-        log.info("Usuario staff creado: username={}, rol={}", userTrim, rol)
-        return Pair(userTrim, passwordPlana)
+        log.info("Usuario staff creado: username={}, rol={}", usernameUnico, rol)
+        return Pair(usernameUnico, passwordPlana)
     }
 
     fun listarUsuariosStaff(): List<Usuario> =
         usuarioRepository.findAll()
             .filter { !it.rol.trim().equals("egresado", ignoreCase = true) }
             .sortedByDescending { it.fechaCreacion }
+
+    private fun generarUsernameStaffUnico(baseUsername: String): String {
+        if (!usuarioRepository.existsByUsername(baseUsername)) return baseUsername
+        var intento = 2
+        while (true) {
+            val candidato = "$baseUsername+$intento"
+            if (!usuarioRepository.existsByUsername(candidato)) return candidato
+            intento++
+        }
+    }
 }

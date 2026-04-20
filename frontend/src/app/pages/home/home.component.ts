@@ -1,15 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { NuevoEgresadoComponent } from './nuevo-egresado/nuevo-egresado.component';
 import { EgresadoForm } from '../../core/datos';
 import { EgresadoService, EgresadoItem, EgresadoDetail, EgresadoCrearResponse } from '../../services/egresado.service';
 import { AuthService, CrearUsuarioBody, UsuarioStaffItem } from '../../services/auth.service';
+import { PERFILES_CREACION_USUARIO, datosRolDesdePerfil } from '../../core/perfiles-usuario-staff';
+
+interface CrearUsuarioStaffForm extends CrearUsuarioBody {
+  /** Clave del desplegable (departamento / división). */
+  perfil: string;
+  segmento_academico: string;
+  carreras_asignadas: string[];
+}
 
 /**
- * Coordinador: alta/edición de egresados y administración de usuarios del personal.
- * El seguimiento del proceso de titulación (incl. residencia profesional) está en la ruta `/home/seguimiento-proceso`.
+ * Personal de titulación: alta/edición de egresados.
+ * Coordinador / división administrativa: además administración de usuarios staff.
+ * El seguimiento del proceso está en `/home/seguimiento-proceso`.
  */
 @Component({
   selector: 'app-home',
@@ -38,25 +48,26 @@ export class HomeComponent implements OnInit {
 
   mostrarModalAgregarUsuario = false;
   mostrarFormularioUsuario = false;
-  usuarioForm: CrearUsuarioBody = {
-    nombre: '',
-    rol: 'coordinador',
-    correo_electronico: '',
-    curp: '',
-  };
+  readonly perfilesCreacionUsuario = PERFILES_CREACION_USUARIO;
+  usuarioForm: CrearUsuarioStaffForm = this.crearUsuarioFormInicial();
   guardandoUsuario = false;
   mensajeUsuario = '';
 
-  get esCoordinador(): boolean {
-    return this.authService.getUsuario()?.rol?.toLowerCase() === 'coordinador';
+  /** Solo coordinador o división administrativa: agregar usuario y pestaña Usuarios. */
+  get esAdminUsuariosStaff(): boolean {
+    return this.authService.puedeAdministrarUsuariosStaff();
   }
 
   constructor(
     private egresadoService: EgresadoService,
     private authService: AuthService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
+    if (this.tabLista === 'usuarios' && !this.authService.puedeAdministrarUsuariosStaff()) {
+      this.tabLista = 'egresados';
+    }
     this.cargarLista();
   }
 
@@ -130,6 +141,9 @@ export class HomeComponent implements OnInit {
   }
 
   cambiarTabLista(tab: 'egresados' | 'usuarios'): void {
+    if (tab === 'usuarios' && !this.authService.puedeAdministrarUsuariosStaff()) {
+      return;
+    }
     this.tabLista = tab;
     this.detalle = null;
     this.usuarioSeleccionado = null;
@@ -146,6 +160,10 @@ export class HomeComponent implements OnInit {
     this.detalle = null;
     this.textoBusqueda = '';
     this.cargarLista();
+  }
+
+  volverInicio(): void {
+    this.router.navigate(['/home']);
   }
 
   onAgregar(payload: { datos: EgresadoForm; archivo: File | null }): void {
@@ -219,9 +237,12 @@ export class HomeComponent implements OnInit {
   }
 
   abrirModalAgregarUsuario(): void {
+    if (!this.authService.puedeAdministrarUsuariosStaff()) {
+      return;
+    }
     this.mostrarFormulario = false;
     this.editando = false;
-    this.usuarioForm = { nombre: '', rol: 'coordinador', correo_electronico: '', curp: '' };
+    this.usuarioForm = this.crearUsuarioFormInicial();
     this.mensajeUsuario = '';
     this.mostrarFormularioUsuario = true;
     this.tabLista = 'usuarios';
@@ -234,6 +255,10 @@ export class HomeComponent implements OnInit {
   }
 
   guardarUsuario(): void {
+    if (!this.authService.puedeAdministrarUsuariosStaff()) {
+      this.mensajeUsuario = 'No tienes permiso para crear usuarios.';
+      return;
+    }
     this.mensajeUsuario = '';
     if (!this.usuarioForm.correo_electronico?.trim()) {
       this.mensajeUsuario = 'El correo electrónico es obligatorio.';
@@ -243,9 +268,27 @@ export class HomeComponent implements OnInit {
       this.mensajeUsuario = 'La CURP es obligatoria.';
       return;
     }
+    if (
+      this.usuarioForm.rol === 'academico' &&
+      this.usuarioForm.perfil !== 'academico_general' &&
+      !this.usuarioForm.carreras_asignadas.length
+    ) {
+      this.mensajeUsuario = 'El perfil académico elegido no tiene carreras asignadas; vuelve a seleccionar el departamento.';
+      return;
+    }
     this.usuarioForm.curp = this.usuarioForm.curp.trim().toUpperCase();
     this.guardandoUsuario = true;
-    this.authService.crearUsuario(this.usuarioForm).subscribe({
+    const body: CrearUsuarioBody = {
+      nombre: this.usuarioForm.nombre,
+      rol: this.usuarioForm.rol,
+      correo_electronico: this.usuarioForm.correo_electronico,
+      curp: this.usuarioForm.curp,
+    };
+    if (this.usuarioForm.rol === 'academico' && this.usuarioForm.perfil !== 'academico_general') {
+      body.segmento_academico = this.usuarioForm.segmento_academico;
+      body.carreras_asignadas = [...this.usuarioForm.carreras_asignadas];
+    }
+    this.authService.crearUsuario(body).subscribe({
       next: (res) => {
         this.guardandoUsuario = false;
         this.mostrarFormularioUsuario = false;
@@ -264,7 +307,36 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  onCambioPerfilUsuario(): void {
+    const d = datosRolDesdePerfil(this.usuarioForm.perfil);
+    this.usuarioForm.rol = d.rol;
+    this.usuarioForm.segmento_academico = d.segmento_academico;
+    this.usuarioForm.carreras_asignadas = d.carreras_asignadas;
+  }
+
+  get carrerasAsignadasTexto(): string {
+    if (!this.usuarioForm.carreras_asignadas.length) return 'Sin carreras asignadas';
+    return this.usuarioForm.carreras_asignadas.join(', ');
+  }
+
+  private crearUsuarioFormInicial(): CrearUsuarioStaffForm {
+    const d = datosRolDesdePerfil('division_estudios_prof_admin');
+    return {
+      nombre: '',
+      perfil: 'division_estudios_prof_admin',
+      rol: d.rol,
+      correo_electronico: '',
+      curp: '',
+      segmento_academico: d.segmento_academico,
+      carreras_asignadas: d.carreras_asignadas,
+    };
+  }
+
   private cargarListaUsuarios(): void {
+    if (!this.authService.puedeAdministrarUsuariosStaff()) {
+      this.listaUsuarios = [];
+      return;
+    }
     this.errorLista = '';
     this.cargandoLista = true;
     this.authService.listarUsuarios().subscribe({

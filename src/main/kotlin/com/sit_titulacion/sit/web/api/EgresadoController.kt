@@ -89,7 +89,7 @@ class EgresadoController(
         if (principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        return ResponseEntity.ok(egresadoService.contarParaDepartamento())
+        return ResponseEntity.ok(egresadoService.contarParaDepartamento(principal.username))
     }
 
     /** Lista para departamento académico (Pendientes, Aprobados, Todos). Solo rol academico. */
@@ -102,7 +102,7 @@ class EgresadoController(
         if (principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        val lista = egresadoService.listarParaDepartamento(estado)
+        val lista = egresadoService.listarParaDepartamento(estado, principal.username)
         return ResponseEntity.ok(lista)
     }
 
@@ -161,7 +161,11 @@ class EgresadoController(
     }
 
     @GetMapping("/{id}")
-    fun obtenerPorId(@PathVariable id: String): ResponseEntity<*> {
+    fun obtenerPorId(
+        @PathVariable id: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         log.info("detalle-egresado: buscando por id={}", id)
         val detalle = egresadoService.obtenerPorId(id)
         log.info("detalle-egresado: resultado por id={} encontrado={}", id, detalle != null)
@@ -178,6 +182,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val doc = egresadoService.obtenerDocumentoAdjunto(id) ?: return ResponseEntity.notFound().build<Void>()
         val headers = HttpHeaders().apply {
             set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.fileName.replace("\"", "%22") + "\"")
@@ -324,6 +329,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.liberar(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -339,6 +345,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.confirmarRecibidosAnexoXxxiXxxii(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -353,6 +360,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val bytes = egresadoService.crearAnexo91(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 mapOf("error" to "No se pudo generar el PDF del anexo 9.1 (plantilla HTML del sistema). Revisa los logs del servidor."),
@@ -370,6 +378,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.confirmarEntregaAnexo91(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -384,6 +393,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.solicitarConstancia92Division(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -399,6 +409,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val bytes = egresadoService.crearAnexo92(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 mapOf(
@@ -420,6 +431,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.confirmarRecibidoAnexo92(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -435,6 +447,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.solicitarSinodales(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -450,6 +463,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val s = egresadoService.obtenerSinodales(id)
         return ResponseEntity.ok(
             SinodalesRespuestaDto(
@@ -470,6 +484,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.asignarSinodales(id, body.presidente, body.secretario, body.vocal, body.vocalSuplente)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -483,6 +498,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.confirmarSinodalesRecibidos(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -499,6 +515,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val lista = revisionService.listarPorEgresado(id)
         return ResponseEntity.ok(lista)
     }
@@ -513,6 +530,7 @@ class EgresadoController(
         if (principal == null || principal.getRol().trim().lowercase() != "academico") {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val creada = revisionService.crear(id, body, principal.getRol())
         return if (creada != null) ResponseEntity.status(HttpStatus.CREATED).body(creada)
         else ResponseEntity.notFound().build<Void>()
@@ -525,6 +543,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         return if (egresadoService.agendarActo93(id, body.fecha_hora)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -547,6 +566,7 @@ class EgresadoController(
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
         val bytes = egresadoService.crearAnexo93(id)
             ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 mapOf("error" to "No se pudo generar el PDF del anexo 9.3 (plantilla HTML del sistema). Revisa los logs del servidor."),
@@ -556,5 +576,16 @@ class EgresadoController(
             .contentType(MediaType.APPLICATION_PDF)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$fileName\"")
             .body(bytes)
+    }
+
+    /** Académico con carreras asignadas no puede abrir expedientes de otras carreras. */
+    private fun respuestaSiAcademicoSinCarrera(id: String, principal: UsuarioPrincipal?): ResponseEntity<*>? {
+        if (principal == null) return null
+        if (principal.getRol().trim().lowercase() != "academico") return null
+        return if (!egresadoService.academicoPuedeAccederAEgresado(principal.username, id)) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("error" to "No autorizado para este egresado."))
+        } else {
+            null
+        }
     }
 }

@@ -1,5 +1,10 @@
 <div class="seg-page">
-  <app-header [showNuevoButton]="false" [showAgregarUsuarioButton]="false"></app-header>
+  <app-header
+    [showNuevoButton]="false"
+    [showAgregarUsuarioButton]="false"
+    [showVolverInicioButton]="true"
+    (volverInicioClick)="volverInicio()"
+  ></app-header>
 
   <main class="seg-main">
     <h1 class="seg-titulo">Seguimiento</h1>

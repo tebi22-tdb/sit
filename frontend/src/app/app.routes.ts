@@ -49,5 +49,13 @@ export const routes: Routes = [
       import('./pages/departamento-academico/departamento-academico.component').then((m) => m.DepartamentoAcademicoComponent),
     canActivate: [academicoGuard],
   },
+  {
+    path: 'servicios-escolares',
+    loadComponent: () =>
+      import('./pages/servicios-escolares/servicios-escolares-placeholder.component').then(
+        (m) => m.ServiciosEscolaresPlaceholderComponent,
+      ),
+    canActivate: [authGuard],
+  },
   { path: '**', redirectTo: 'login' },
 ];

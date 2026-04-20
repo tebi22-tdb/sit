@@ -22,6 +22,8 @@ data class Usuario(
     val nombre: String? = null,
     val curp: String? = null,
     @Field("correo_electronico") val correoElectronico: String? = null,
+    @Field("segmento_academico") val segmentoAcademico: String? = null,
+    @Field("carreras_asignadas") val carrerasAsignadas: List<String> = emptyList(),
     val activo: Boolean = true,
     val fechaCreacion: Instant = Instant.now(),
     val fechaActualizacion: Instant = Instant.now(),

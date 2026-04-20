@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HeaderComponent } from '../../layout/header/header.component';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-coordinador-inicio',
@@ -15,8 +16,8 @@ import { HeaderComponent } from '../../layout/header/header.component';
         <div class="cards">
           <button type="button" class="card" (click)="irAltaEgresadosUsuarios()">
             <div class="card-texto">
-              <h2>Alta de egresados y usuarios</h2>
-              <p>Registro de alumnos, documentos y usuarios del personal.</p>
+              <h2>{{ tituloCardAlta }}</h2>
+              <p>{{ descripcionCardAlta }}</p>
             </div>
             <div class="card-icono" aria-hidden="true">Alta</div>
           </button>
@@ -27,6 +28,13 @@ import { HeaderComponent } from '../../layout/header/header.component';
             </div>
             <div class="card-icono" aria-hidden="true">Seg</div>
           </button>
+          <button type="button" class="card">
+            <div class="card-texto">
+              <h2>Revisiones</h2>
+              <p>Consulta el estado de revisión académica .</p>
+            </div>
+            <div class="card-icono" aria-hidden="true">Rev</div>
+          </button>
         </div>
       </div>
     </div>
@@ -34,25 +42,40 @@ import { HeaderComponent } from '../../layout/header/header.component';
   styles: [`
     .coordinador-inicio { min-height: 100vh; background: #f5f7fb; }
     .contenido { padding: 0.6rem 1.5rem 1.5rem; }
-    .titulo { margin: 0 0 1rem; text-align: center; font-size: 2.35rem; font-weight: 700; color: #1f2937; letter-spacing: .2px; }
-    .cards { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(300px, 1fr)); gap: 0.9rem; }
-    .card { border: 1px solid #aac7ec; border-radius: 18px; background: #b9d9ff; padding: 1.05rem 1.1rem; min-height: 150px; display: flex; align-items: center; justify-content: space-between; gap: .85rem; text-align: left; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .titulo { margin: 0 0 .9rem; text-align: center; font-size: 2.05rem; font-weight: 700; color: #1f2937; letter-spacing: .2px; }
+    .cards { max-width: 1060px; margin: 1.05rem auto 0; display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 0.75rem; }
+    .card { border: 1px solid #aac7ec; border-radius: 16px; background: #b9d9ff; padding: .82rem .9rem; min-height: 122px; display: flex; align-items: center; justify-content: space-between; gap: .72rem; text-align: left; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
     .card:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.10); border-color: #7faedc; }
-    .card-texto h2 { margin: 0 0 .4rem; font-size: 2rem; font-weight: 650; color: #1f2937; line-height: 1.05; }
-    .card-texto p { margin: 0; font-size: 1.02rem; color: #374151; line-height: 1.3; max-width: 30ch; }
-    .card-icono { width: 108px; height: 108px; border-radius: 16px; background: rgba(255,255,255,.78); display: flex; align-items: center; justify-content: center; font-size: 2.55rem; font-weight: 700; color: #1f4c8f; flex-shrink: 0; }
+    .card-texto h2 { margin: 0 0 .3rem; font-size: 1.7rem; font-weight: 650; color: #1f2937; line-height: 1.02; }
+    .card-texto p { margin: 0; font-size: .9rem; color: #374151; line-height: 1.25; max-width: 28ch; }
+    .card-icono { width: 88px; height: 88px; border-radius: 14px; background: rgba(255,255,255,.78); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: #1f4c8f; flex-shrink: 0; }
     @media (max-width: 900px) {
       .contenido { padding: 0.6rem 1rem 1.2rem; }
-      .titulo { font-size: 1.9rem; }
+      .titulo { font-size: 1.8rem; }
       .cards { grid-template-columns: 1fr; max-width: 760px; }
-      .card { min-height: 132px; }
-      .card-texto h2 { font-size: 1.55rem; }
-      .card-icono { width: 92px; height: 92px; font-size: 2rem; }
+      .card { min-height: 116px; }
+      .card-texto h2 { font-size: 1.45rem; }
+      .card-icono { width: 78px; height: 78px; font-size: 1.7rem; }
     }
   `],
 })
 export class CoordinadorInicioComponent {
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+  ) {}
+
+  get tituloCardAlta(): string {
+    return this.auth.puedeAdministrarUsuariosStaff()
+      ? 'Alta de egresados y usuarios'
+      : 'Alta de egresados';
+  }
+
+  get descripcionCardAlta(): string {
+    return this.auth.puedeAdministrarUsuariosStaff()
+      ? 'Registro de alumnos, documentos y usuarios del personal.'
+      : 'Registro de alumnos y documentos de titulación.';
+  }
 
   irAltaEgresadosUsuarios(): void {
     this.router.navigate(['/home/alta']);

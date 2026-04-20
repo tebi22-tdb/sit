@@ -76,6 +76,16 @@
   background: #2f855a;
 }
 
+.btn-volver {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-volver:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .sit-menu-der {
   display: flex;
   align-items: center;

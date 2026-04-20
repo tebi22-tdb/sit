@@ -2,8 +2,7 @@
   <app-header [showNuevoButton]="false"></app-header>
   <main class="departamento-main" [class.departamento-main--ancho]="tabActivo === 'sinodales'">
     <header class="departamento-header">
-      <h1 class="departamento-titulo">Departamento académico</h1>
-      <p class="departamento-subtitulo">Revisiones</p>
+      <h1 class="departamento-titulo">{{ tituloDepartamento }}</h1>
     </header>
 
     <nav class="departamento-tabs" aria-label="Filtrar por estado">
@@ -17,6 +16,7 @@
         <span class="departamento-tab-badge">{{ counts.pendientes }}</span>
       </button>
       <button
+        *ngIf="esModoRevision"
         type="button"
         class="departamento-tab departamento-tab--observaciones"
         [class.activo]="tabActivo === 'en_correccion'"
@@ -26,6 +26,7 @@
         <span class="departamento-tab-badge">{{ counts.en_correccion }}</span>
       </button>
       <button
+        *ngIf="esModoRevision"
         type="button"
         class="departamento-tab departamento-tab--aprobados"
         [class.activo]="tabActivo === 'aprobados'"
@@ -35,6 +36,7 @@
         <span class="departamento-tab-badge">{{ counts.aprobados }}</span>
       </button>
       <button
+        *ngIf="!esModoRevision"
         type="button"
         class="departamento-tab departamento-tab--sinodales"
         [class.activo]="tabActivo === 'sinodales'"
