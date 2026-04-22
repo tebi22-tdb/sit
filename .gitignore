@@ -49,3 +49,7 @@ frontend/out-tsc/
 ### Logs y temporales ###
 bootrun-log.txt
 *.log
+
+_prisciliano_*.txt
+_esteban_pdf.txt
+_doc_extract_text.txt
