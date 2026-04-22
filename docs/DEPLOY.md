@@ -1,4 +1,4 @@
-# Despliegue SIT — Paso a paso
+# Despliegue SITVO — Paso a paso
 
 Sigue los pasos en orden. Todo se hace en dos sitios: **tu PC** y **el servidor** (77.37.74.122).
 
@@ -131,7 +131,7 @@ Se abre el editor. **Borra** todo lo que haya y **pega** exactamente esto:
 
 ```ini
 [Unit]
-Description=SIT Backend
+Description=SITVO Backend
 After=network.target mongod.service
 
 [Service]
@@ -241,7 +241,7 @@ En tu PC abre el navegador y entra a:
 
 **http://77.37.74.122**
 
-Deberías ver primero la pantalla de **login**. Tras iniciar sesión como coordinador verás la aplicación SIT (lista de egresados, botón Nuevo, etc.).
+Deberías ver primero la pantalla de **login**. Tras iniciar sesión como coordinador verás la aplicación SITVO (lista de egresados, botón Nuevo, etc.).
 
 ---
 

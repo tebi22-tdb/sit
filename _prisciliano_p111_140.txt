@@ -1,0 +1,742 @@
+---P111---
+95 
+ 
+3.1.8.4 incremento (entrega y aumento) 
+ 
+Una vez, desarrollada las funciones para llevar un control y manipular los roles 
+de usuario utilizada por el sistema, se ejecutó el método de compilad o en el 
+símbolo del sistema, para obtener una carpeta de nombre Build (construcción), 
+misma que contiene toda la información del código realizado y posteriormen te 
+ser ejecutada para ser almacenada en el hospedaje de archivo (Hosting) de 
+Firebase y subir los avances del proyecto a la plataforma GitHub, en un 
+repositorio privado (Figura 39). 
+ 
+ 
+Figura 39. Compilación y ejecución del código. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+  
+ 
+ 
+
+---P112---
+96 
+ 
+3.1.9 Sprint de vistas y acciones 
+ 
+En este sexto y último sprint, se desarrollaron todos los componentes que  
+hacen visible las ventanas de navegación que conforman los módulos, las  
+cuales un usuario interacciona en el navegador para poder manejar y manipular  
+la información de la clínica, con ellos poder realizar todas las acciones (crear,  
+ver, editar, actualizar, eliminar y buscar). 
+ 
+3.1.9.1 Revisión 
+ 
+En la sub carpeta vistas, primero, se crearon seis componentes; 
+NuevoTratamiento.js, en el módulo denominado de la misma manera, se 
+registran los tratamientos que la clínica maneja y vende a los pacientes con sus 
+atributos (nombre, descripción, precio y tipo) y se guarda con una fecha aut o 
+generada por el sistema, la cual sirve para ordenar los tratamientos y estas se 
+almacenan en la sección de Firestore, en caso de errores o acciones no 
+controladas, se importó las alertas personalizadas que se muestran al u suario 
+también por medio de una condición, ninguna caja de texto debe quedar vacío .    
+ 
+El componente NuevoPaciente.js, en el módulo denominado de la misma 
+manera, se registra toda la información para los atributos de los pacientes, 
+incluyendo los antecedentes patológicos y el historial, con el fin de saber el 
+tiempo que este recurre a la clínica para hacer uso de sus servicios, también s e 
+guarda junto a una fecha auto generada por el sistema. El dentista, median te la 
+---P113---
+97 
+ 
+importación de un paquete de imágenes para React JS, puede ir alma cenando 
+múltiples fotos de la dentadura del paciente y así poder llevar un mejor co ntrol 
+sobre su tratamiento y seguimiento clínico. Como los atributos del paciente son  
+muchos y para mantener una buena estética en las ventanas de  navegación, se 
+hizo uso de la herramienta paso a paso (stepper) de Material UI, la cual muestra 
+parte por parte, todas las cajas de texto para cada atributo en sub venta nas y 
+mantiene una buena presentación de la información con funciones (atrás y  
+adelante) para revisar los datos almacenad os; se importaron también, las 
+demás herramientas para dejar la ventana conforme al prototipo final  y con una 
+condicional ninguna caja de texto debe quedar vacía y con las alertas 
+personalizadas se le muestra al usuario, indicando el error. 
+ 
+El componente NuevoDentista.js, en el módulo Dentista, se registran la 
+información de los atributos siguientes: nombre, especialidad, dirección, 
+teléfono de contacto y de emergencia, que son los que dan seguimiento a  las 
+citas y revisan los expedientes de los pacientes; todo esto en conjunto se 
+guarda con una fecha auto generada por el sistema. Por medio de una  función 
+se válida aceptar una cantidad de solo diez dígitos para las cajas de texto  que 
+reciben los números telefónicos; con una condicional, todas las cajas de te xto 
+deben de ser requisitadas, en caso de no cumplirse las acciones de registro  se 
+activan las alertas personalizadas en la ventana de navegación. 
+ 
+El componente NuevoAlmacen.js, en el módulo Almacén, registra la informació n 
+de los atributos de todos los insumos con la cual cuenta la clínica en su 
+---P114---
+98 
+ 
+almacén , nombre insumo, existencia y stock mínimo, también se guarda junto a 
+una fecha auto generada por el sistema. Por medio de una co ndición se indica 
+que el stock mínimo no debe de ser mayor o igual a la existencia y al no  
+cumplirse, se activan las alertas personalizadas que el usuario ve en la pantall a 
+de navegación (Figura 40).  
+ 
+ 
+Figura 40. Vista del componente para registrar insumos en el almacén. Fuente:  
+elaboración propia de acuerdo a las condiciones del proyecto. 
+ 
+El componente NuevaCita.js, en el módulo denominado de la misma manera, se 
+registra la información para agendar una cita con sus atributos , nombre 
+paciente, correo, nombre dentista, fecha de la cita, hora de la cita, nombre 
+tratamiento, precio, descripción y status, que un paciente solicita; todo esto  en 
+conjunto se guarda con una fecha auto generada por el sistema; el nombre del 
+paciente, su correo, dentista y tratamiento se extraen a partir del uso  de 
+
+---P115---
+99 
+ 
+referencias y consultas propias de Firebase dentro de las colecciones de los 
+Pacientes, Dentistas y Tratamiento en la sección de Firestore. Al momento de 
+registrar los atributos para la cita, primero se debe de guardar la información en 
+el calendario de Google, conectada al sistema por medio de la interfa z de 
+programación de aplicaciones (API) desarrollada por la empresa Google y se 
+activa por medio de una cuenta de correo electrónico para que solo los usuarios  
+autenticados puedan usarlo. Por medio condiciones ninguna caja de texto  debe 
+quedar vacía y al no cumplirse, el usuario ve el mensaje de error, con el uso de 
+alertas personalizadas mostradas en la pantalla.   
+ 
+El componente NuevaVenta.js, en el módulo Venta, registra la informaci ón a 
+partir de los datos de la cita y de otros atributos asignados , fecha de la venta, 
+nombre del paciente, nombre del dentista, tratamiento, precio, cantidad de 
+pagos, numero de pago, forma de pago, tipo de pago, venta tota l, cantidad 
+pagada y datos opcionales de facturación como: nombre, RFC y correo 
+electrónico. Por medio de una condicional ninguna caja de texto debe quedar 
+vacía y al no cumplirse, con el uso de alertas personalizadas mostradas en la 
+pantalla indicando el error. Con un botón, se puede descargar en fo rmato PDF 
+el comprobante de pago que puede guardarse en digital o ser impresa para el 
+paciente. 
+ 
+Todos los componentes para insertar información en las colecciones de 
+Firebase, hacen uso del keyword.js, para crear un arreglo de todas las palabras 
+---P116---
+100 
+ 
+que conforman la información y que ayuda a realizar las búsquedas 
+personalizadas en tiempo real (Figura 41). 
+ 
+ 
+Figura 41. Componentes para crear palabras clave. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+ 
+También para estas colecciones se importaron los componentes de acciones 
+ubicadas en la sub carpeta Action, que son las que muestran la informació n, las 
+manipulan y sirven para hacer el listado en tablas. Al mismo tiempo , dentro del 
+archivo App.js, se importaron todos los componentes que registran los datos en 
+Firestore. 
+ 
+Se hizo uso de la herramienta selección de enlaces (Breadcrums), para que un 
+usuario pueda navegar entre módulos, también se respeta el diseño  adaptativo 
+(Responsive design), para poder ver los componentes en un dispositivo móvil y 
+
+---P117---
+101 
+ 
+por último se importó el BarFooter.js que muestra el pie de página con la 
+información de la clínica. 
+ 
+3.1.9.2 Retrospectiva 
+ 
+Realizados los componentes para los registros, se crearon unos nuevos para 
+listar la información almacenadas en la sección de Firestore y posteriormente 
+hacer los componentes para editar y actualizar dichos datos provenientes  de las 
+colecciones. 
+ 
+1) Exploración. Dentro de la misma sub carpeta vistas, se crearon diez 
+componentes que son las que muestran la información a los usuarios y uno 
+más para las acciones del almacén.  
+ 
+El componente ListaAlmacen.js, a partir de un arreglo, extrae los datos  
+almacenados en la colección Almacén dentro de la sección de Firestore, y 
+de esta manera ser mostrada en una lista con el uso de la herra mienta tabla 
+de Material UI, la cual se ordena de forma descendente conforme a la fecha 
+de registro en el sistema. Dentro de la tabla con los atributos, mediante 
+iconos se realizaron tres funciones que a partir del identificador (ID), se 
+elimina algún insumo dentro de la colección, otra que lleva mediante un 
+enlace a otro componente que edita la información y la última que permite 
+realizar las acciones de surtido a los cubículos de la clínica.  
+---P118---
+102 
+ 
+Para insertar un nuevo registro, mediante un botón y con el uso de enlace s 
+se importa NuevoAlmacen.js dentro del módulo Almacén. 
+ 
+El componente AccionesAlmacen.js, mediante el identificador (ID) y 
+consultas de Firebase a partir de la ListaAlmacen.js, muestra la informa ción 
+de un insumo específico seleccionado por el usuario, en cajas de texto de 
+Material UI, que se mantiene deshabilitado, que a partir de ello se hace el 
+surtido a los cubículos con que cuenta la clínica; con una condicional se 
+indica que el stock no debe ser mayor o igual a la existencia del cubículo y 
+del almacén, por medio de las alertas personalizadas se muestra el erro r en 
+la pantalla del navegador y así garantizar el control sobre las entradas y 
+salidas de insumos evitando que no exista merma o registros perdidos ; con 
+una caja de texto de tipo revisión (check), se activan los botones para 
+actualizar el almacén y guardar los registros con una fecha auto generada  
+por el sistema, la cual sirve para ordenar los insumos dentro de Firestore. 
+ 
+El componente ListaCubiculo.js, a partir de las AccionesAlmacen.js, extrae 
+los datos, previamente registrados y almacenados en la colección Cubículo 
+dentro de Firestore y las m uestra en la herramienta tabla de Material UI, 
+ordenada en forma descendente según la fecha que fue registrada. Dentro 
+de la tabla, mediante iconos se realizaron dos funciones que a partir del 
+identificador (ID), se elimina algún insumo de un cubículo específico dentro 
+de la colección y la otra que lleva por medio de un enlace a otro comp onente 
+que edita la información (Figura 42) .  
+---P119---
+103 
+ 
+ 
+ 
+El componente ListaTratamiento.js, extrae en un arreglo los datos desde la  
+sección de Firestore en la colección de Tratamiento para mostrarla en forma 
+de lista con el uso de la herramienta tabla de Material UI, ordenada en forma 
+descendente según la fecha que fue registrada en el sistema. Dentro de la 
+tabla, con iconos se realizaron dos funciones que a partir del identificador 
+(ID), se elimina algún tratamiento dentro de la colección y la otra para ll evar 
+a otro componente que edita la información. Para insertar un nuevo registro, 
+por medio de un botón y con el uso de enlaces se importa 
+NuevoTratamiento.js dentro del módulo Tratamiento. 
+ 
+El componente ListaDentista.js, por medio de un arreglo, extrae los datos 
+almacenados en la colección Dentista dentro de la sección de Firestore y así Figura 42. Componente para listado de cubículos. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+
+---P120---
+104 
+ 
+ser mostradas en forma de lista con el uso de la herramienta tabla de 
+Material UI, misma que se ordena en forma descendente conforme a la 
+fecha de registro en el sistema. Dentro de la tabla con los atributos, 
+empleando iconos se realizaron dos funciones que a partir del identificador 
+(ID), se elimina algún dentista dentro de la colección y la otra que lleva p or 
+medio de un enlace a otro componente que edita la información.  Para 
+insertar un nuevo registro, mediante un botón de Material UI, con el uso  de 
+enlaces se importa el componente NuevoDentista.js dentro del módulo 
+Dentista. 
+ 
+El componente ListaPaciente.js, extrae los datos almacenados en la 
+colección Paciente dentro de la sección de Firestore y muestra parte de ella 
+en una lista con el uso de la herramienta tabla de Material UI, q ue se ordena 
+en forma descendente conforme a la fecha de registro en el sistema. Dentro 
+de la tabla con los atributos, utilizando iconos se crearon dos funciones que 
+a partir del identificador (ID), se elimina algún paciente dentro de la 
+colección y la otra que lleva por medio de un enlace a otro componente q ue 
+edita la información. Para insertar un nuevo registro, empleando un botón de 
+Material UI, con el uso de enlaces se importa el componente 
+NuevoPaciente.js dentro del módulo Paciente. A partir de estados en Rea ct 
+JS, al momento de activar dos cajas de texto de tipo revisión (check) en la 
+cabecera y otra en las columnas de la tabla se muestran dos iconos, un o 
+para llevar a otro componente que realiza la gestión de citas y la otra para  
+mostrar todos los datos del paciente. 
+---P121---
+105 
+ 
+El componente DatosListaPaciente.js, se activa a partir de la tabla de 
+ListaPaciente.js, la cual sirve para mostrar los datos en cajas de texto 
+deshabilitadas de un paciente específico, como datos personales, 
+antecedentes patológicos, historial y fotos de las dentaduras; a partir de esto 
+el usuario puede descargar en formato PDF la información del paciente qu e 
+por defecto trae el logotipo de la clínica y una tabla con imágenes de tipos 
+de dientes, para guardarlo digitalmente o imprimirlo (Figura 43). 
+ 
+ 
+ 
+ 
+El componente ListaCita.js, extrae los datos almacenados en la colección 
+Cita dentro de la sección de Firestore y las muestra en una lista con el u so 
+de la herramienta tabla de Material UI, que se ordena en forma des cendente 
+conforme a la fecha de registro en el sistema .  
+Figura 43. Componente para generar PDF del paciente. Fuente: elaboración  
+propia de acuerdo a las condiciones del proyecto. 
+---P122---
+106 
+ 
+Dentro de la tabla con los atributos, empleando iconos se creó una funció n 
+que a partir del identificador (ID), se elimina alguna cita dentro de la 
+colección. Para registrar una nueva agenda del paciente, mediante un bo tón 
+de Material UI, con el uso de enlaces se importa el componente 
+NuevaCita.js dentro del módulo Cita. Por medio de estados en React JS , al 
+momento de activar dos cajas de texto de tipo revisión (check) en la 
+cabecera y otra en las columnas de la tabla se muestran tres iconos, uno 
+para llevar a otro componente que realiza la gestión de ventas, otra para  
+mostrar los datos de la cita y una última que cambia el status según la fe cha 
+en que se llevará a cabo la cita, misma que en la tabla se m uestra en dos 
+colores dependiendo si se encuentra activo o finalizado y con el uso de 
+alertas personalizadas, al seleccionar la opción status se muestra la 
+información de seguimiento de la cita. Se crearon dos botones, una para ver 
+el calendario de citas activas y la otra que muestra un formulario para el  
+envio de mensajes en los correos electrónicos de los pacientes, para 
+notificarle información de la cita a realizar. 
+ 
+El componente DatosListaCita.js se activa a partir de la tabla de ListaCita.js, 
+la cual sirve para mostrar los datos en cajas de texto deshabilitadas de una 
+cita específica para un paciente; a partir de esto el usuario puede de scargar 
+en formato PDF la información de la cita que por defecto trae el logotip o de 
+la clínica, para guardarlo digitalmente o imprimirlo. 
+ 
+---P123---
+107 
+ 
+El componente CalendarioCitas.js, muestra un calendario proporcionado po r 
+los servicios de Google Calendar a partir de la interfaz de programación de 
+aplicaciones (API), configurada desde la nube de Google (Figu ra 44), la cual 
+contiene información del seguimiento de una cita para un paciente, qu e el 
+dentista puede manejar por meses, semanas o por la agenda. 
+ 
+ 
+ 
+ 
+El componente ListaVenta.js, extrae los datos almacenados en la colección 
+Venta dentro de la sección de Firestore y las muestra en una lista con el uso 
+de la herramienta tabla de Material UI, que se ordena en forma des cendente 
+conforme a la fecha de registro en el sistema. En la tabla con los atributos, 
+mediante iconos se creó una función que a partir del identificador (ID), se 
+elimina alguna venta dentro de la colección.  
+Figura 44. Configuración de la API de Google Calendar. Fuente: elaboració n 
+propia de acuerdo a las condiciones del proyecto. 
+---P124---
+108 
+ 
+Para guardar datos de una nueva venta, mediante un botón d e Material UI, 
+con el uso de enlaces se importa el componente NuevaVenta.js d entro del 
+módulo denominado de la misma manera. Por medio de estados en React 
+JS, al momento de activar una caja de texto de tipo revisión (check) en la  
+cabecera de la tabla se muestran un icono, que lleva a otro component e 
+para visualizar los datos de la venta. Con consultas propias de Firebase, en 
+un componente de material UI, se muestra el monto total de ventas que  se 
+van realizando. 
+ 
+El componente DatosListaVenta.js se activa a partir de la tabla de 
+ListaVenta.js, la cual muestra los datos en cajas de texto deshabilitadas de 
+una venta ya realizada para un paciente; a partir de esto el usuario  puede 
+descargar en formato PDF la información de la venta que por defecto trae el 
+logotipo de la clínica, para guardarlo digitalmente o imprimirlo. 
+ 
+Para todos los componentes que muestran información proveniente desde 
+Firestore, se importaron las acciones (AlmacenAction.js , CubiculoAction.js , 
+TratamientoAction. js, DentistaAction.js , PacienteAction.js , CitaAction.js y 
+VentaAction.js) que contiene dos funciones, una para mostrar los primeros  
+veinte registros, y la otra para desplazarse entre la cantidad de datos 
+mostrados en la tabla por medio de botones de Material UI, denomin ados 
+"siguiente" y "atrás”, también la funcion de búsquedas para poder encontrar  
+un dato especifico según lo requiera el usuario. 
+ 
+---P125---
+109 
+ 
+Se importó en los componentes anteriores, la herramienta selección de 
+enlaces (Breadcrums) de Material UI, para que un usuario pueda navega r 
+entre módulos, también el componente BarFooter.js que muestra el pie de 
+página con la información de la clínica, respetando el diseño adaptativo 
+(Responsive design), para hacer uso del sistema en un dispositivo móvil. Por 
+último, por medio de la nube de Google en la sección de Firestore se 
+crearon los índices para las búsquedas en tiempo real (Figura 45 ). 
+ 
+ 
+ 
+ 
+2) Ejecución . Dentro de la misma sub carpeta vistas, se crearon seis 
+componentes, las cuales muestran los datos de un documento específico 
+seleccionada por el usuario bajo el identificador (ID) que tiene n, para ser 
+modificadas y actualizadas dentro de las colecciones de Firestore, 
+Figura 45. Creación de índices para búsquedas. Fuente: elaboración p ropia 
+de acuerdo a las condiciones del proyecto. 
+---P126---
+110 
+ 
+proveniente desde los componentes que contienen la información en ta blas 
+de Material UI. 
+ 
+El componente EditarTratamiento.js, muestra la información de un 
+tratamiento en cajas de texto y le permite al usuario poder cambiar el 
+nombre, descripción, precio y tipo según lo requiera. 
+ 
+El componente EditarPaciente.js, muestra la información de un paciente, en 
+cajas de texto dentro de la herramienta paso a paso (stepper) de Material UI, 
+la cual muestra parte por parte todos los atributos en sub ventanas y 
+mantiene una buena presentación de la información con funciones (atrás y 
+adelante) para revisar los datos y permitirle al usuario actualizarlos según lo 
+requiera, además de insertar o quitar fotos de las dentaduras del paciente, 
+para su seguimiento clínico dental. 
+ 
+El componente EditarDentista.js, muestra información de un dentista en 
+cajas de texto y le permite al usuario poder cambiar, el nombre, 
+especialidad, dirección, teléfono de contacto y de emergencia. 
+ 
+El componente EditarCubiculo.js, muestra el inventario de un cubículo en 
+cajas de texto, solo le permite el usuario modificar la existencia y el stock 
+mínimo; el nombre del insumo y del cubículo se mantiene igual. 
+ 
+---P127---
+111 
+ 
+El componente EditarCita.js, muestra información de una cita en cajas de 
+texto, se mantiene igual el nombre del paciente, su correo, la fecha  y hora 
+programada para la cita; solo le permite al usuario modificar la descripción, 
+precio, status y el nombre del dentista haciendo referencia a la colección 
+denominado de la misma manera para seleccionar a otro personal médico , 
+también le permite al usuario enviar mensaje al correo del paciente p ara 
+notificarle el día y la hora que debe presentarse en la clínica (Figura 46). 
+ 
+ 
+ 
+ 
+El componente EditarAlmacen.js, muestra el inventario del almacén en ca jas 
+de texto y le permite al usuario poder cambiar el nombre del insumo, la  
+existencia y el stock mínimo. 
+Figura 46. Componente para el seguimiento de la cita. Fuente: elabo ración 
+propia de acuerdo a las condiciones del proyecto. 
+---P128---
+112 
+ 
+3.1.9.3 Producto (correcciones) 
+ 
+En la plataforma Firebase, se agregaron las reglas de lectura, escritura 
+creación, modificación y actualización, para que el sistema pueda validar, 
+indiciar y permitirle a un usuario según su rol, los privilegios sobre acciones que 
+está autorizada hacer con la información que la clínica dental Merlos este 
+manejando (Figura 47). 
+ 
+ 
+Figura 47. Creación de reglas de ingreso al sistema. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+ 
+Con estas reglas se garantiza una mejor seguridad e integridad ya que so lo las 
+cuentas autorizadas con un rol definido por el administrador pueden ingresa r al 
+sistema para manipular los datos y con ellos evitar que personas externas 
+entren sin tener los permisos. 
+
+---P129---
+113 
+ 
+3.1.9.4 incremento (entrega y aumento) 
+ 
+Una vez, desarrollada los componentes de las vistas que muestra los datos al 
+usuario, se prepara todo el código trabajado y se ejecutó el métod o de 
+compilado en el símbolo del sistema, para obtener la carpeta Build 
+(construcción) que hace posible el funcionamiento del sistema y posteriormente 
+ser ejecutada para ser almacenada en el sitio web de Netlify para realizar las 
+pruebas de uso y al final en el hospedaje de archivo (Hosting) de Firebase para 
+ser entregada, también se subió los avances del proyecto en el repositorio 
+privado dentro de la plataforma GitHub, haciendo uso del control de versi ones 
+de Git. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+---P130---
+114 
+ 
+IV. RESULTADOS 
+ 
+ 
+Al concluir el proyecto, la clínica dental Merlos cuenta con un sistema eficaz y 
+seguro para el inventario y la gestión de sus productos y tratamientos, que  
+permite tener control sobre los expedientes, insumos, ventas y citas d e manera 
+digital; accesible a través de internet por medio de dos direcciones URL seguras 
+y con credenciales válidas para la navegación, proporcionadas por la plataforma 
+Firebase, https://clinicadentalmerlos-fc206.web.app/acceso/auth/login o 
+https://clinicadentalmerlos-fc206.firebaseapp.com/acceso/auth/login, que se 
+almacena desde el hospedaje de archivos (hosting) de la misma, la cuál pue de 
+ser abierta desde cualquier navegador web (Chrome, Firefox, Microsoft Edge, 
+entre otras) en cualquier dispositivo utilizado por el personal (computadora,  
+Tablet y/o teléfono); bajo el nombre de sistema dental Merlos, que es 
+identificada por el logotipo de la clínica (Figura 48). 
+ 
+---P131---
+115 
+ 
+ 
+ 
+ 
+ 
+Para poder conocer los límites del sistema, se realizó un mapa de navegación, 
+que muestra las acciones de acuerdo al tipo de usuario en cada uno de los 
+módulos (Figura 49). 
+ 
+ 
+ Acciones MódulosTipo de 
+usuaroSistema 
+dental 
+Merlos
+Login
+ Administrador
+Usuario
+Crear, ver, consultar, modificar y 
+eliminar
+Paciente
+Crear, ver, consultar, modificar y 
+eliminar
+Dentista
+Crear, ver, consultar, modificar y 
+eliminar
+Tratamiento
+Crear, ver, consultar, modificar y 
+eliminar
+Cita
+Crear, ver, consultar, modificar y 
+eliminar
+Almacén
+Crear, ver, consultar, modificar y 
+eliminar
+Cubículo
+Crear, ver, consultar, modificar y 
+eliminar
+Venta
+Crear, ver, consultar, modificar y 
+eliminar
+Figura 49. Mapa de navegación "Sistema dental Merlos". Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+Figura 48. Logotipo de identificación del sistema. Fuente: clínica dental Merlos. 
+---P132---
+116 
+ 
+Figura 49. Continuación. 
+ 
+ Acciones MódulosTipo de 
+usuaroSistema 
+dental 
+Merlos
+Login
+Dentista 
+principal
+Usuario
+ Ver y consultar
+Paciente
+Crear, ver, consultar, modificar y 
+eliminar
+Dentista
+Crear, ver, consultar, modificar y 
+eliminar
+Tratamiento
+Crear, ver, consultar, modificar y 
+eliminar
+Cita
+Crear, ver, consultar, modificar y 
+eliminar
+Almacén
+ Ver y consultar
+Cubículo
+ Ver y consultar
+Venta
+Crear, ver, consultar, modificar y 
+eliminar
+Dentista 
+secundario
+Usuario
+ Ver y consultar
+Paciente
+Crear, ver, consultar, modificar y 
+eliminar
+Dentista
+ Ver y consultar
+Tratamiento
+Crear, ver, consultar, modificar y 
+eliminar
+Cita
+Crear, ver, consultar, modificar y 
+eliminar
+Almacén
+ Ver y consultar
+Cubículo
+ Ver y consultar
+Venta
+Crear, ver, consultar, modificar y 
+eliminar
+---P133---
+117 
+ 
+Figura 49. Continuación  
+ 
+ Acciones MódulosTipo de 
+usuaroSistema 
+dental 
+Merlos
+Login
+Asistente de 
+consultorio
+Usuario
+ Ver y consultar
+Paciente
+ Ver y consultar
+Dentista
+ Ver y consultar
+Tratamiento
+ Ver y consultar
+Cita
+ Ver y consultar
+Almacén
+ Ver y consultar
+Cubículo
+ Ver y consultar
+Venta
+Crear, ver, consultar, modificar y 
+eliminar
+Contador
+Usuario
+ Ver y consultar
+Paciente
+ Ver y consultar
+Dentista
+ Ver y consultar
+Tratamiento
+ Ver y consultar
+Cita
+ Ver y consultar
+Almacén
+ Ver y consultar
+Cubículo
+ Ver y consultar
+Venta
+ Ver y consultar
+---P134---
+118 
+ 
+El usuario al ingresar en el enlace por defecto se muestra la ventana de l Login, 
+el primer módulo para los tipos de usuario, la cual solicita necesariamen te 
+introducir las credenciales mediante un correo electrónico y una contraseña 
+dentro de las cajas de texto, que están validadas para detectar cualquier tipo de 
+error cometido, además cuenta con un enlace para poder modificar la  
+contraseña, según se requiera (Figura 50). 
+ 
+ 
+Figura 50. Login de acceso al sistema. Fuente: elaboración propia de acuerdo a 
+las condiciones del proyecto. 
+ 
+El sistema después de validar las credenciales de inicio de sesión, muestra los 
+módulos, la cabecera con el nombre del usuario en sesión, la foto de perfil, y el 
+pie de página con el nombre de la clínica. Al seleccionar el icono barra,  se 
+muestra el menú desplegable, con el nombre y logotipo de la clínica, que l e 
+
+---P135---
+119 
+ 
+permite al usuario poder escoger alguna opción y con ello ir a un m ódulo 
+específico o también cerrar sesión (Figura 51 ). 
+ 
+ 
+Figura 51. Vista del menú desplegable. Fuente: elaboración propia de acuerdo a 
+las condiciones del proyecto. 
+ 
+El módulo Usuarios, en la ventana lista, se visualiza la tabla que contiene la 
+imagen de perfil, correo electrónico, teléfono, nombre, apellido y un bo tón que 
+muestra el rol de cada uno de los usuarios activos dentro del sistema y para 
+eliminar a uno en específico, solo el administrador lo puede realizar dentro de la 
+plataforma Firebase, en la colección de Firestore y en la sección de 
+Authentication, con ello se garantiza una mejor seguridad, evitando que 
+cualquiera persona pueda alterar la información de la clínica; mediante un bo tón 
+en la parte superior, denominado “Agregar usuario”, el administrador puede 
+
+---P136---
+120 
+ 
+registrar a un nuevo usuario, con todos los requisitos necesarios para ser 
+validado y aceptado en el sistema (Figura 52 ). 
+ 
+ 
+Figura 52 . Módulo usuario, venta na lista. Fuente: elaboración propia de acuerdo 
+a las condiciones del proyecto. 
+  
+El módulo Pacientes, dentro de la ventana lista muestra la tabla que contiene 
+los registros, junto a tres botones de tipo icono con acciones para eliminar, 
+editar y para ver todos los atributos, otras dos más para las funciones de “atrás” 
+y “siguiente”,  con la cual el usuario puede desplazarse entre el total de datos; 
+un buscador en tiempo real para encontrar algún registro específico, un botó n 
+para agregar un nuevo paciente dentro de la colección en Firestore; ad emás a 
+partir de su información en la tabla, el usuario realiza la agenda de citas (Figura 
+53). 
+ 
+
+---P137---
+121 
+ 
+ 
+Figura 53. Módulo paciente, venta na lista. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+ 
+Al seleccionar el icono tipo lápiz, se muestra la ventana editar, la cual, mediante 
+el identificador (ID) del paciente se muestran todos sus atributos en cajas d e 
+texto dentro de la herramienta paso a paso, en donde el usuario p uede 
+modificar y actualizar algún dato según lo requiera. 
+ 
+Si el usuario selecciona el botón denominado “Agregar paciente” se muestra 
+una ventana con la herramienta pasos a paso, que contiene en fo rmulario para 
+agregar primero, los datos personales del paciente; después los antecedentes  
+patológicos, posteriormente se puede seleccionar múltiples fotos de la 
+dentadura del paciente, para su seguimiento clínico y por último se mue stran 
+todos los datos insertados para que el usuario haga una revisión, además de 
+tener alertas en caso de dejar un campo vacío o un error cometido (Figura 54 ). 
+
+---P138---
+122 
+ 
+ 
+Figura 54. Ventana para agregar paciente. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+ 
+Al seleccionar el ícono de tipo documento, se muestra la ventana datos, la cual, 
+mediante el identificador (ID) del paciente se muestra toda la información com o 
+los datos personales, antecedentes patológicos y fotos de las dentaduras en 
+cajas de texto deshabilitadas y en tarjetas (Card) de material UI, que p ara el 
+seguimiento del mismo, se le conoce como la historia clínica médico dental, 
+cuenta con la opción para generar un documento en formato PDF con dichos 
+datos; exportada en una cadena hexadecimal para mantener segura la 
+información, incluye el logotipo de la clínica y una tabla con ejemplos de dientes   
+(Figura 55 ). 
+ 
+
+---P139---
+123 
+ 
+ 
+Figura 55. Vista del documento PDF de la historia clínica médico dental. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 
+ 
+Dentro del módulo Dentista, en la ventana lista, se muestra la tabla con los 
+atributos, junto a dos botones para editar o eliminar un registro, otras  con 
+funciones para que el usuario puede desplazarse entre el total de d atos, un 
+buscador en tiempo real, u n botón denominado “Agregar dentista” que, al 
+seleccionar en ella, muestra la ventana nueva, que tiene la finalidad de  registrar 
+a un dentista en el sistema. 
+ 
+Si el usuario desea entrar al ícono de tipo lápiz, se muestra la ventana editar, la 
+cual, mediante el identificador (ID) del dentista se muestra la información en 
+cajas de texto, para que el usuario pueda modificar y actualizar el nombre , 
+especialidad, dirección, teléfono de contacto o de emergencia según lo 
+
+---P140---
+124 
+ 
+requiera, la cual se refleja de menara inmediata dentro de la colección y se 
+muestra en la ventana lista dentro de la tabla (Figura 56 ). 
+ 
+ 
+Figura 56. Vista de la ventana para editar dentista. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+ 
+Dentro del módulo Tratamientos, en la ventana lista, se muestra la tabla con los 
+atributos, junto a dos botones para editar o eliminar un registro, otras con 
+funciones para que el usuario puede desplazarse entre el total de d atos, un 
+buscador en tiempo real.  Al seleccionar el ícono de tipo lápiz, se muestra la 
+ventana editar, la cual, mediante el identificador (ID) de un tratamiento se 
+muestra la información en cajas de texto, para que el usuario pueda mod ificar y 
+actualizar según lo requiera. 
+ 

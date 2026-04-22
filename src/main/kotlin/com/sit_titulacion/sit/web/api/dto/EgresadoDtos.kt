@@ -91,6 +91,8 @@ data class RevisionDto(
     @JsonProperty("revisado_por") val revisadoPor: String,
     val resultado: String,
     val observaciones: String? = null,
+    @JsonProperty("enviado_al_egresado") val enviadoAlEgresado: Boolean = false,
+    @JsonProperty("fecha_envio_egresado") val fechaEnvioEgresado: String? = null,
 )
 
 /** Cuerpo para crear una revisión (Enviar revisión con observaciones). */

@@ -114,6 +114,8 @@ export interface RevisionApi {
   revisado_por: string;
   resultado: string;
   observaciones?: string;
+  enviado_al_egresado?: boolean;
+  fecha_envio_egresado?: string;
 }
 
 /** Conteos para las pestañas del departamento académico. */
@@ -213,6 +215,16 @@ export class EgresadoService {
   /** Crea una revisión (Enviar revisión con observaciones). Solo rol academico. */
   crearRevision(egresadoId: string, body: { resultado: string; observaciones?: string }): Observable<RevisionApi> {
     return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones`, body);
+  }
+
+  /** Marca una revisión como enviada al egresado para mostrarla en su seguimiento. */
+  enviarRevisionAEgresado(egresadoId: string, revisionId: string): Observable<RevisionApi> {
+    return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones/${revisionId}/enviar`, {});
+  }
+
+  /** Seguimiento del egresado: revisiones enviadas desde apoyo/departamento. */
+  getMisRevisionesEnviadas(): Observable<RevisionApi[]> {
+    return this.http.get<RevisionApi[]>(`${API}/mi-seguimiento/revisiones`);
   }
 
   /** Obtiene el documento adjunto del egresado (PDF/Word) para visualización. Solo rol academico. */

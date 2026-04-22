@@ -75,6 +75,25 @@
           </dl>
         </div>
 
+        <div class="seguimiento-card seguimiento-card-notificaciones">
+          <h3 class="seguimiento-card-titulo">Revisiones para corregir</h3>
+          <p *ngIf="cargandoRevisionesEnviadas" class="seguimiento-avance-line">Cargando revisiones…</p>
+          <ul *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length > 0" class="seguimiento-revision-lista">
+            <li *ngFor="let r of revisionesParaCorregir" class="seguimiento-revision-item">
+              <p class="seguimiento-revision-titulo">
+                Revision recibida, favor de corregir en la brevedad
+              </p>
+              <p *ngIf="r.observaciones" class="seguimiento-revision-obs">{{ r.observaciones }}</p>
+              <p class="seguimiento-revision-fecha">
+                {{ formatearFechaHora(r.fecha_envio_egresado || r.fecha) }}
+              </p>
+            </li>
+          </ul>
+          <p *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length === 0" class="seguimiento-avance-line">
+            No tienes revisiones pendientes por corregir.
+          </p>
+        </div>
+
         <div class="seguimiento-card">
           <h3 class="seguimiento-card-titulo">Avance actual</h3>
           <p class="seguimiento-avance-line">{{ estadoActualAlumno }}</p>

@@ -56,6 +56,26 @@ class RevisionService(
         return revisionRepository.findByEgresadoIdOrderByNumeroRevisionDesc(oid).map { toDto(it) }
     }
 
+    fun listarEnviadasAlEgresado(egresadoId: String): List<RevisionDto> {
+        val oid = try { ObjectId(egresadoId) } catch (_: Exception) { return emptyList() }
+        return revisionRepository.findEnviadasAlEgresado(oid).map { toDto(it) }
+    }
+
+    fun enviarRevisionAlEgresado(egresadoId: String, revisionId: String): RevisionDto? {
+        val egresadoOid = try { ObjectId(egresadoId) } catch (_: Exception) { return null }
+        val revisionOid = try { ObjectId(revisionId) } catch (_: Exception) { return null }
+        val existente = revisionRepository.findByIdAndEgresadoId(revisionOid, egresadoOid) ?: return null
+        if (existente.resultado != "observaciones") return null
+        if (existente.enviadoAlEgresado) return toDto(existente)
+        val enviada = revisionRepository.save(
+            existente.copy(
+                enviadoAlEgresado = true,
+                fechaEnvioEgresado = Instant.now(),
+            ),
+        )
+        return toDto(enviada)
+    }
+
     fun ultimaRevision(egresadoId: ObjectId): Revision? =
         revisionRepository.findByEgresadoIdOrderByNumeroRevisionDesc(egresadoId).firstOrNull()
 
@@ -67,5 +87,7 @@ class RevisionService(
         revisadoPor = r.revisadoPor,
         resultado = r.resultado,
         observaciones = r.observaciones,
+        enviadoAlEgresado = r.enviadoAlEgresado,
+        fechaEnvioEgresado = r.fechaEnvioEgresado?.let { formatter.format(it) },
     )
 }

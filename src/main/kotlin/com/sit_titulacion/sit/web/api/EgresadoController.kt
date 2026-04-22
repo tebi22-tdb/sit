@@ -82,24 +82,24 @@ class EgresadoController(
         return ResponseEntity.ok(lista)
     }
 
-    /** Conteos para pestañas del departamento académico. Solo rol academico. */
+    /** Conteos para pestañas del departamento / coordinación. Académico o personal de coordinación. */
     @GetMapping("/departamento/counts")
     fun contarDepartamento(@AuthenticationPrincipal principal: UsuarioPrincipal?): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
-        if (principal.getRol().trim().lowercase() != "academico") {
+        if (!puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
         return ResponseEntity.ok(egresadoService.contarParaDepartamento(principal.username))
     }
 
-    /** Lista para departamento académico (Pendientes, Aprobados, Todos). Solo rol academico. */
+    /** Lista para departamento / coordinación (Pendientes, Aprobados, Todos). Académico o coordinación. */
     @GetMapping("/departamento")
     fun listarDepartamento(
         @RequestParam(required = false, defaultValue = "pendientes") estado: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
-        if (principal.getRol().trim().lowercase() != "academico") {
+        if (!puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
         val lista = egresadoService.listarParaDepartamento(estado, principal.username)
@@ -165,7 +165,14 @@ class EgresadoController(
         @PathVariable id: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        if (principal != null) {
+            val rol = principal.getRol().trim().lowercase()
+            when {
+                rol == "academico" -> respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+                puedeVerBandejaDepartamento(principal.getRol()) ->
+                    respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
+            }
+        }
         log.info("detalle-egresado: buscando por id={}", id)
         val detalle = egresadoService.obtenerPorId(id)
         log.info("detalle-egresado: resultado por id={} encontrado={}", id, detalle != null)
@@ -173,16 +180,16 @@ class EgresadoController(
         else ResponseEntity.notFound().build<Void>()
     }
 
-    /** Descarga/visualiza el documento adjunto del egresado (PDF/Word). Solo rol academico. */
+    /** Descarga/visualiza el documento adjunto del egresado (PDF/Word). Académico o personal de coordinación. */
     @GetMapping("/{id}/documento")
     fun obtenerDocumento(
         @PathVariable id: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         val doc = egresadoService.obtenerDocumentoAdjunto(id) ?: return ResponseEntity.notFound().build<Void>()
         val headers = HttpHeaders().apply {
             set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.fileName.replace("\"", "%22") + "\"")
@@ -192,6 +199,31 @@ class EgresadoController(
             .headers(headers)
             .contentType(mediaType)
             .body(InputStreamResource(doc.inputStream))
+    }
+
+    /**
+     * Sustituye el PDF/Word adjunto al expediente. Académico o personal de coordinación.
+     * Sin `consumes` estricto: algunos clientes envían `multipart/form-data` con parámetros extra en Content-Type
+     * y Spring dejaba de emparejar el handler (404 "No static resource").
+     */
+    @PostMapping("/{id}/documento/reemplazar")
+    fun reemplazarDocumentoAdjunto(
+        @PathVariable id: String,
+        @RequestParam("archivo") archivo: MultipartFile,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
+        if (archivo.isEmpty) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "Seleccione un archivo no vacío."))
+        }
+        return if (egresadoService.reemplazarDocumentoAdjunto(id, archivo)) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "No se encontró el egresado."))
+        }
     }
 
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -326,10 +358,10 @@ class EgresadoController(
         @PathVariable id: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         return if (egresadoService.liberar(id)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -460,10 +492,10 @@ class EgresadoController(
         @PathVariable id: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         val s = egresadoService.obtenerSinodales(id)
         return ResponseEntity.ok(
             SinodalesRespuestaDto(
@@ -481,10 +513,10 @@ class EgresadoController(
         @RequestBody body: AsignarSinodalesRequestDto,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         return if (egresadoService.asignarSinodales(id, body.presidente, body.secretario, body.vocal, body.vocalSuplente)) {
             ResponseEntity.ok().build<Void>()
         } else {
@@ -506,34 +538,59 @@ class EgresadoController(
         }
     }
 
-    /** Lista revisiones del egresado (solo rol academico). */
+    /** Lista revisiones del egresado. Académico o personal de coordinación. */
     @GetMapping("/{id}/revisiones")
     fun listarRevisiones(
         @PathVariable id: String,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         val lista = revisionService.listarPorEgresado(id)
         return ResponseEntity.ok(lista)
     }
 
-    /** Crea una revisión (Enviar revisión con observaciones). Solo rol academico. */
+    /** Envía una revisión al egresado para que pueda verla en su seguimiento (solo revisiones con observaciones). */
+    @PostMapping("/{id}/revisiones/{revisionId}/enviar")
+    fun enviarRevisionAlEgresado(
+        @PathVariable id: String,
+        @PathVariable revisionId: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
+        val enviada = revisionService.enviarRevisionAlEgresado(id, revisionId)
+        return if (enviada != null) ResponseEntity.ok(enviada)
+        else ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(mapOf("error" to "No se pudo enviar la revisión. Verifica que sea una revisión con observaciones válida."))
+    }
+
+    /** Crea una revisión (Enviar revisión con observaciones). Académico o personal de coordinación. */
     @PostMapping(value = ["/{id}/revisiones"], consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun crearRevision(
         @PathVariable id: String,
         @RequestBody body: CreateRevisionRequestDto,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal == null || principal.getRol().trim().lowercase() != "academico") {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         }
-        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
         val creada = revisionService.crear(id, body, principal.getRol())
         return if (creada != null) ResponseEntity.status(HttpStatus.CREATED).body(creada)
         else ResponseEntity.notFound().build<Void>()
+    }
+
+    /** Seguimiento del egresado: revisiones que ya fueron enviadas para corrección. */
+    @GetMapping("/mi-seguimiento/revisiones")
+    fun miSeguimientoRevisiones(@AuthenticationPrincipal principal: UsuarioPrincipal?): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        val egresadoId = resolverEgresadoIdParaMiSeguimiento(principal) ?: return ResponseEntity.notFound().build<Void>()
+        return ResponseEntity.ok(revisionService.listarEnviadasAlEgresado(egresadoId))
     }
 
     @PostMapping("/{id}/agendar-acto-9-3", consumes = [MediaType.APPLICATION_JSON_VALUE])
@@ -578,14 +635,58 @@ class EgresadoController(
             .body(bytes)
     }
 
+    /**
+     * Misma idea que el front `AuthService.isCoordinador()` + académicos:
+     * pueden ver la bandeja de revisión / coordinación y listados de departamento.
+     */
+    private fun puedeVerBandejaDepartamento(rol: String?): Boolean {
+        if (rol.isNullOrBlank()) return false
+        val r = rol.trim().lowercase().replace(' ', '_')
+        return r == "academico" ||
+            r == "coordinador" ||
+            r == "apoyo_titulacion" ||
+            r == "division_estudios_prof_admin"
+    }
+
     /** Académico con carreras asignadas no puede abrir expedientes de otras carreras. */
     private fun respuestaSiAcademicoSinCarrera(id: String, principal: UsuarioPrincipal?): ResponseEntity<*>? {
         if (principal == null) return null
         if (principal.getRol().trim().lowercase() != "academico") return null
-        return if (!egresadoService.academicoPuedeAccederAEgresado(principal.username, id)) {
+        return respuestaSiNoAccesoEgresadoBandeja(id, principal)
+    }
+
+    /** Coordinación / misma regla que la bandeja: residencia excluida donde aplica; carrera solo para académicos segmentados. */
+    private fun respuestaSiNoAccesoEgresadoBandeja(id: String, principal: UsuarioPrincipal): ResponseEntity<*>? =
+        if (!egresadoService.academicoPuedeAccederAEgresado(principal.username, id)) {
             ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("error" to "No autorizado para este egresado."))
         } else {
             null
         }
+
+    /** Obtiene el id de egresado para el usuario logueado en seguimiento (vínculo o número de control). */
+    private fun resolverEgresadoIdParaMiSeguimiento(principal: UsuarioPrincipal): String? {
+        val numeroControl = principal.username.trim().ifBlank { return null }
+        val egresadoIdFromUsuario = principal.getEgresadoId()
+        val detalle = if (egresadoIdFromUsuario != null) {
+            egresadoService.obtenerPorEgresadoId(egresadoIdFromUsuario).also { d ->
+                if (d != null) log.debug("mi-seguimiento-revisiones: username={}, encontrado por egresadoId", numeroControl)
+                else log.warn("mi-seguimiento-revisiones: username={}, egresadoId={} no existe en registro", numeroControl, egresadoIdFromUsuario)
+            }
+        } else {
+            egresadoService.obtenerPorNumeroControlParaSeguimiento(numeroControl).also { d ->
+                if (d != null) {
+                    log.debug("mi-seguimiento-revisiones: username={}, encontrado por numero_control", numeroControl)
+                    try {
+                        usuarioService.crearOVincularUsuarioEgresado(numeroControl, ObjectId(d.id))
+                        log.info("mi-seguimiento-revisiones: usuario {} vinculado a egresado {}", numeroControl, d.id)
+                    } catch (e: Exception) {
+                        log.warn("mi-seguimiento-revisiones: no se pudo vincular egresadoId al usuario {}: {}", numeroControl, e.message)
+                    }
+                } else {
+                    log.warn("mi-seguimiento-revisiones: username={}, no hay egresado asociado", numeroControl)
+                }
+            }
+        }
+        return detalle?.id
     }
 }

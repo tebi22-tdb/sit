@@ -1,6 +1,6 @@
-# Estructura del proyecto SIT
+# Estructura del proyecto SITVO
 
-**SIT — Sistema Integral de Titulación**  
+**SITVO — Sistema Integral de Titulación**  
 Proyecto de residencia profesional.
 
 - **Backend:** Kotlin + Spring Boot 4  

@@ -37,7 +37,7 @@ class MongoConfig(private val env: Environment) {
     @EventListener(ApplicationReadyEvent::class)
     fun logConexion() {
         val uri = env.getProperty("spring.data.mongodb.uri") ?: "(no configurado)"
-        log.info("=== MongoDB SIT === Base: {} | Colecciones: registro, usuarios ===", BASE_DATOS)
+        log.info("=== MongoDB SITVO === Base: {} | Colecciones: registro, usuarios ===", BASE_DATOS)
         log.info("URI: {}", uri.take(60))
     }
 }

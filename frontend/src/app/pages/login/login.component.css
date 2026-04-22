@@ -142,13 +142,14 @@
 
 .btn-login {
   width: 100%;
-  padding: 0.54rem;
+  min-height: 34px;
+  padding: 0.36rem 0.7rem;
   margin-top: 0.16rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #fff;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.12s ease, box-shadow 0.2s;

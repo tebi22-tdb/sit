@@ -19,33 +19,57 @@
   color: #374151;
 }
 
-.sit-tabs-lista {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  margin-bottom: 0.65rem;
+.sit-vista-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  padding: 0.35rem 0.45rem;
+  background: #eaf1fb;
+  border: 1px solid #d8e4f5;
+  border-radius: 8px;
 }
 
-.sit-tab-lista {
+.sit-vista-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #294e78;
+  letter-spacing: 0.01em;
+}
+
+.sit-vista-select {
+  flex: 1;
+  min-width: 0;
   height: 34px;
-  border: 1px solid #cfd8ea;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #b8cbe4;
   border-radius: 7px;
   background: #fff;
-  color: #2d4567;
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
+  color: #1f3f63;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
-.sit-tab-lista.activo {
-  background: #2f7bcb;
+.sit-vista-select:focus {
+  outline: none;
   border-color: #2f7bcb;
-  color: #fff;
+  box-shadow: 0 0 0 3px rgba(47, 123, 203, 0.2);
+}
+
+.sit-vista-chip {
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #d8e4f5;
+  border-radius: 8px;
+  background: #eaf1fb;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #294e78;
 }
 
 .sit-buscar-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   margin-bottom: 1rem;
   align-items: stretch;
 }
@@ -53,23 +77,26 @@
 .sit-buscar-input {
   flex: 1;
   min-width: 0;
-  padding: 0.5rem 0.65rem;
+  height: 34px;
+  padding: 0.35rem 0.55rem;
   border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
 }
 
 .sit-btn-buscar {
   flex-shrink: 0;
-  padding: 0.5rem 0.75rem;
+  min-height: 34px;
+  padding: 0.35rem 0.62rem;
   border: 1px solid #3182ce;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #3182ce;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  min-width: 5rem;
+  min-width: 4.4rem;
 }
 
 .sit-btn-buscar:hover {
@@ -81,9 +108,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0.25rem;
   border: 1px solid #cbd5e0;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #fff;
   color: #4a5568;
   cursor: pointer;
@@ -320,12 +349,14 @@
 }
 
 .sit-btn-enviar {
-  padding: 0.5rem 1rem;
+  min-height: 32px;
+  padding: 0.34rem 0.72rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #38a169;
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -339,21 +370,20 @@
 }
 
 .sit-btn-editar {
-  padding: 0.5rem 1rem;
+  min-height: 32px;
+  padding: 0.34rem 0.72rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #3182ce;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   color: #fff;
-  box-shadow: 0 1px 3px rgba(49, 130, 206, 0.35);
-  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
 .sit-btn-editar:hover {
   background: #2c5282;
-  box-shadow: 0 2px 6px rgba(49, 130, 206, 0.4);
 }
 
 .sit-btn-editar:active {
@@ -361,11 +391,12 @@
 }
 
 .sit-btn-eliminar {
-  padding: 0.5rem 1rem;
+  min-height: 32px;
+  padding: 0.34rem 0.72rem;
   border: 1px solid #e53e3e;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #fff;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   color: #e53e3e;
@@ -381,11 +412,12 @@
 }
 
 .sit-btn-cerrar {
-  padding: 0.5rem 1rem;
+  min-height: 32px;
+  padding: 0.34rem 0.72rem;
   border: 1px solid #cbd5e0;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #fff;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   color: #4a5568;
@@ -635,12 +667,14 @@
 }
 
 .sit-btn-cancelar {
-  padding: 0.5rem 1rem;
+  min-height: 32px;
+  padding: 0.34rem 0.72rem;
   border: 1px solid #cbd5e0;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #fff;
   color: #4a5568;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -649,12 +683,13 @@
 }
 
 .sit-btn-guardar {
-  padding: 0.5rem 1.25rem;
+  min-height: 32px;
+  padding: 0.34rem 0.78rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: #3182ce;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
 }

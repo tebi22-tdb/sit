@@ -40,11 +40,11 @@ class EmailService(
         val mensaje = SimpleMailMessage().apply {
             setFrom(fromEmail)
             setTo(correoDestino.trim())
-            subject = "SIT - Tus credenciales de acceso"
+            subject = "SITVO - Tus credenciales de acceso"
             text = """
                 Hola,
 
-                Se ha creado tu cuenta en el Sistema Integral de Titulación (SIT).
+                Se ha creado tu cuenta en el Sistema Integral de Titulación (SITVO).
 
                 Usuario: $usuario
                 Contraseña: $password

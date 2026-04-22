@@ -1,4 +1,4 @@
-# SIT - Sistema Integral de Titulación
+# SITVO - Sistema Integral de Titulación
 
 Proyecto de **residencia profesional**. Backend en **Kotlin** (Spring Boot 4), frontend en **Angular 18**, base de datos **MongoDB**.
 

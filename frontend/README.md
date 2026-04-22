@@ -1,4 +1,4 @@
-# SIT - Frontend (Angular)
+# SITVO - Frontend (Angular)
 
 Frontend del Sistema Integral de Titulación. Se comunica con el backend en Kotlin (Spring Boot).
 

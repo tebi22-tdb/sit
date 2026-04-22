@@ -36,10 +36,13 @@ export class HeaderComponent implements OnInit {
     const segmento = obtenerSegmentoAcademicoDef(u?.segmento_academico ?? '');
 
     if (rol === 'academico') {
-      const area = segmento?.nombre ?? this.inferirAreaAcademicaPorCarreras(u?.carreras_asignadas) ?? 'Académico';
+      const area =
+        segmento?.nombre ??
+        this.inferirAreaAcademicaPorCarreras(u?.carreras_asignadas) ??
+        'Coordinacion de apoyo a la titulacion';
       this.nombreUsuario = `${nombre} - ${area}`;
     } else if (username === 'coordinador' || rol === 'coordinador') {
-      this.nombreUsuario = `${nombre} - Coordinador`;
+      this.nombreUsuario = `${nombre} - Administrador`;
     } else if (rol === 'apoyo_titulacion') {
       this.nombreUsuario = `${nombre} - Apoyo titulación`;
     } else if (rol === 'division_estudios_prof_admin') {

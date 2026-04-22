@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, academicoGuard, coordinadorGuard, egresadoGuard } from './guards/auth.guard';
 
 /**
- * Enrutado SIT (titulación / residencia profesional y otras modalidades).
+ * Enrutado SITVO (titulación / residencia profesional y otras modalidades).
  *
  * - Coordinador: inicio → alta de egresados (`/home/alta`) y seguimiento de proceso (`/home/seguimiento-proceso`).
  * - Académico: departamento y revisión de expedientes no residencia.
@@ -29,6 +29,20 @@ export const routes: Routes = [
     path: 'home/seguimiento-proceso',
     loadComponent: () =>
       import('./pages/seguimiento-proceso/seguimiento-proceso.component').then((m) => m.SeguimientoProcesoComponent),
+    canActivate: [coordinadorGuard],
+  },
+  {
+    path: 'home/revisiones/revision/:id',
+    loadComponent: () =>
+      import('./pages/departamento-academico/revision-documento/revision-documento.component').then(
+        (m) => m.RevisionDocumentoComponent,
+      ),
+    canActivate: [coordinadorGuard],
+  },
+  {
+    path: 'home/revisiones',
+    loadComponent: () =>
+      import('./pages/departamento-academico/departamento-academico.component').then((m) => m.DepartamentoAcademicoComponent),
     canActivate: [coordinadorGuard],
   },
   {

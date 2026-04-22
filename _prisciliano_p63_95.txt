@@ -1,0 +1,884 @@
+---P63---
+47 
+ 
+d) Orientadas a columnas. Estas bases de datos, como Cassandra o 
+HBase, permiten realizar consultas en grandes conjuntos de datos y 
+almacenan los datos en columnas, en lugar de filas (Oracle, 2021). 
+ 
+2.12.2.2 Diseño 
+ 
+Formato JSON. Es un formato ligero de intercambio de datos. Leerlo y e scribirlo 
+es simple para humanos, mientras que para las máquinas es simple 
+interpretarlo y generarlo. Está basado en un subconjunto de JavaScript , 
+Standard ECMA- 262, ideal para el intercambio de datos (JSON, 2021). 
+ 
+Es una cadena cuyo formato recuerda al de los objetos literales 
+JavaScript. Incluye tipos de datos básicos dentro como, cadenas, números, 
+arreglos, booleanos, y otros literales de objeto, esto permite construir un a 
+jerarquía de datos (Mozilla, 2021). 
+ 
+a) Colección de pares. En varios lenguajes esto es conocido como 
+un objeto, registro, estructura, diccionario, tabla hash, lista de claves o un 
+arreglo asociativo (Mozilla, 2021). 
+ 
+b) Lista ordenada de valores . En la mayoría de los lenguajes, esto se 
+implementa como arreglos, vectores, listas o secuencias (Mozilla, 2021). 
+ 
+ 
+---P64---
+48 
+ 
+2.12.2.3 Construcción  
+ 
+Firebase es una plataforma para el desarrollo de aplicaciones web y 
+aplicaciones móviles desarrollada por Google, c on Firebase se almacenan y 
+sincronizan datos con la base de datos NoSQL alojada en la nube (Fireba se, 
+2021).  
+ 
+2.12.2.4 Pruebas 
+ 
+1) Almacenamiento de archivo (Storage) . Es un servicio de almacenamiento de 
+objetos al que puede acceder a través de Google Cloud Platform. Con  ello ir 
+a los archivos a través de referencias, cargar archivos fácilmente y también 
+monitorear el progreso de las tareas (Firebase, 2021). 
+ 
+Ofrece un servicio de almacenamiento de objetos potente, simple y rentable  
+construido para el escalamiento de Google. Los SDK de Firebase para 
+Cloud Storage agregan la seguridad de Google a las operaciones de carga y 
+descarga de archivos de tus apps de Firebase, sin importar la calidad de la 
+red (Firebase, 2021). 
+ 
+2) Cloud Firestore (Firestore en la nube) . Es una base de datos flexible y 
+escalable para el desarrollo en servidores, dispositivos móviles y la Web 
+desde Firebase y Google Cloud (Firebase, 2021). 
+ 
+---P65---
+49 
+ 
+Mantiene los datos sincronizados entre apps cliente a través de objetos de 
+escucha en tiempo real y ofrece soporte sin conexión para dispositivos 
+móviles y la web, puede compilar apps con gran capacidad de respuesta 
+(Firebase, 2021). 
+ 
+3) Autenticación de usuarios (Authentication). Proporciona servicios de 
+backend, SDK fáciles de usar y bibliotecas de IU ya elaboradas para 
+autenticar a los usuarios en la app (Firebase, 2021). 
+ 
+Admite la autenticación mediante contraseñas, números de teléfono, 
+proveedores de identidad federada populares, como Google, Facebook y 
+Twitter, entre otros. Se integra estrechamente con otros servicios y 
+aprovecha estándares de la industria como OAuth 2.0 y OpenID Connect 
+(Firebase, 2021). 
+ 
+4) Hospedaje de archivos (hosting). Es un servicio para almacenar un sitio 
+web completamente administrado para microservicios y contenido estático y 
+dinámico. Cuenta con el respaldo del almacenamiento global (Firebase, 
+2021). 
+ 
+5) Funciones (cloud functions). Es un framework sin servidores que permite 
+ejecutar de forma automática el código de backend en respuesta a las 
+solicitudes HTTPS.  El código JavaScript o TypeScript se almacena en la 
+nube de Google y se ejecuta en un entorno administrado (Firebase, 2021). 
+---P66---
+50 
+ 
+III. PROCEDIMIENTO Y DESCRIPCIÓN DE LAS ACTIVIDADES 
+REALIZADAS 
+ 
+ 
+El desarrollo del proyecto se realiza en base y adaptada al proceso d el marco 
+de trabajo Scrum oficial, dividida en cuatro partes (Cuadro 2) , ya que, debido a 
+su flexibilidad, adaptabilidad y a su respuesta a cambios, permite rápidamen te 
+en los procesos para el desarrollo, inspeccionar las iteraciones y culminar los 
+sprints correctamente en el menor tiempo.  
+ 
+Cuadro 2. Proceso del Marco de trabajo Scrum para el proyecto. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 
+Procesos del marco de trabajo 
+valores 
+Eventos Planificación Pila Sprints Incremento 
+I 
+n 
+s 
+p 
+e 
+c 
+c 
+i 
+ó 
+n  A 
+d 
+a 
+p 
+t 
+a 
+c 
+i 
+ó 
+n  A 
+n 
+á 
+l 
+i 
+s 
+i 
+s E 
+s 
+p 
+e 
+c 
+i 
+f 
+i 
+c 
+a 
+ci 
+ón  P 
+e 
+n 
+d 
+i 
+e 
+n 
+t 
+e 
+s  A 
+c 
+c 
+i 
+o 
+n 
+e 
+s  Revisión Retrospectiva Producto 
+E 
+n 
+t 
+r 
+e 
+g 
+a  A 
+u 
+m 
+e 
+n 
+t 
+o  R 
+e 
+v 
+i 
+s 
+i 
+ó 
+n E 
+x 
+p 
+l 
+o 
+r 
+a 
+c 
+i 
+ó 
+n  E 
+j 
+e 
+c 
+u 
+c 
+i 
+ó 
+n  C 
+o 
+r 
+r 
+e 
+c 
+c 
+i 
+ó 
+n 
+Antes Ahora Después 
+---P67---
+51 
+ 
+La primera parte son los eventos, también denominado como el antes, en 
+donde se hizo la inspección y adaptación del proyecto a Scrum. La segund a 
+parte o el ahora, contempla la planificación, pila, y los sprints. Por último,  la 
+tercera parte, el incremento o el después, donde se entrega las partes 
+desarrolladas satisfactoriamente, y también el aumento de otra iteración, en 
+dado caso que haya faltado algunos detalles, hasta la culminación del proyecto.    
+ 
+Durante la ejecución de cada uno de los procesos del marco de trabajo de 
+Scrum, para garantizar el éxito y culminación del proyecto se cuenta con 
+valores como:  compromiso, enfoque, apertura, respeto y coraje. Por último, se  
+generó un sistema web para la gestión de expedientes y citas para los 
+pacientes, y control de inventarios para los insumos de la clínica. 
+ 
+ 
+3.1 Descripción de las actividades 
+ 
+ 
+3.1.1 Eventos 
+ 
+En esta primera parte, el director de desarrollo de software de la age ncia de 
+marketing digital y desarrollo de software, Biotec.io, visitó la clínica dental 
+Merlos para revisar las necesidades de la problemática y determinar la forma d e 
+llevar a cabo el plan de trabajo para el comienzo del sistema. 
+---P68---
+52 
+ 
+El proyecto para su desarrollo se adaptada al marco de trabajo Scrum, pa ra 
+organizar, ordenar y ejecutar cada una de las partes de los procesos. 
+ 
+3.1.1.1 Inspección 
+ 
+Primero, se revisó y analizó la situación de los problemas y necesidades en la 
+clínica dental Merlos para el proceso del inventario, gestión de citas y 
+expedientes; posteriormente se determinó los requerimientos que pide para el 
+funcionamiento del sistema, llevada a cabo por la agencia de marketing d igital y 
+desarrollo de software Biotec.io, como se muestra a continuación. 
+ 
+1) Usuario 
+2) Dentista 
+3) Paciente 
+4) Tratamiento  
+5) Citas 
+6) Ventas 
+7) Inventario (almacén y cubículo). 
+ 
+La información recabada, se desglosa por módulos para hacer las ventanas de 
+navegación; se identificaron los campos para cada uno de estos, que son 
+sujetos para la de la base de datos y del funcionamiento del sistema (Anexo 1). 
+ 
+---P69---
+53 
+ 
+3.1.1.2 Adaptación 
+ 
+Una vez depurada la información de la problemática y las especificaciones que 
+la clínica requiere, el proyecto se adaptó a los procesos del marco de trabajo 
+Scrum oficial, en donde se siguió las reglas para hacer flexible cada una de las 
+partes para crear, desarrollar y ejecutar el proyecto, con el tiempo necesario, las 
+iteraciones suficientes y adecuadas para culminar los procesos ya planteados. 
+ 
+3.1.2 Planificación  
+ 
+Ya planteadas los requerimientos para el sistema, bajo los procesos de Scrum, 
+se llevó a cabo la planificación del proyecto, en la cual se realizó el análisis y las 
+especificaciones para comenzar el plan de creación y desarrollo. 
+ 
+3.1.2.1 Análisis 
+  
+En este apartado, se escogieron las herramientas más aptas para diseñar, crear 
+y desarrollar el proyecto, dichas herramientas incluyen programas de model ado 
+UML, prototipado , editor de código, programas de compilación, navegador web, 
+programas basados en la nube para las bases de datos y de pruebas, le nguajes 
+de programación orientados en paradigma de componentes para el sistema 
+web, y un framework para crear una interfaz intuitiva, flexible y adaptable para 
+darle una mejor experiencia visual al usuario. Seleccionadas las herramientas, 
+con el fin de mantener ordenados los componentes para una mejor navegación 
+---P70---
+54 
+ 
+y hacer buenas prácticas de programación, se clasificó los módulos de acuerdo 
+al tipo de usuario y su rol, se definió cada elemento a pertenecer en cada 
+módulo, donde se les dió los privilegios a cada usuario (Cuadro 3), que será n 
+las ventanas al navegar por el sistema. 
+ 
+Cuadro 3 . Módulos para ventan as de navegación del sistema. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 
+Rol de usuario Módulos Privilegios 
+Administrador Login Ver e ingresar  
+Usuarios crear, ver, consultar, modificar y eliminar 
+Dentista crear, ver, consultar, modificar y eliminar 
+Almacén crear, ver, consultar, modificar y eliminar 
+Cubículos crear, ver, consultar, modificar y eliminar 
+Paciente  crear, ver, consultar, modificar y eliminar 
+Tratamiento  crear, ver, consultar, modificar y eliminar 
+Citas  crear, ver, consultar, modificar y eliminar 
+Ventas  crear, ver, consultar, modificar y eliminar 
+Dentista principal Login  Ver e ingresar 
+Usuarios Ver y consultar 
+Dentista  crear, ver, consultar, modificar y eliminar 
+Almacén Ver y consultar 
+Cubículos Ver y consultar 
+Paciente  crear, ver consultar, modificar y eliminar 
+Tratamiento  crear, ver, consultar, modificar y eliminar 
+Citas  crear, ver, consultar, modificar y eliminar 
+Ventas  crear, ver, consultar, modificar y eliminar 
+Dentista secundario Login Ver e ingresar 
+Usuarios   Ver y consultar 
+Dentista   Ver y consultar 
+Almacén  Ver y consultar 
+Cubículos  Ver y consultar 
+Paciente  crear, ver consultar, modificar y eliminar 
+Tratamiento   crear, ver, consultar, modificar y eliminar 
+Citas  crear, ver, consultar, modificar y eliminar 
+Ventas  crear, ver, consultar, modificar y eliminar 
+Asistente de consultorio Login Ver e ingresar 
+Usuarios  Ver y consultar 
+Dentista   Ver y consultar 
+Almacén  Ver y consultar 
+Cubículos  Ver y consultar 
+Paciente   Ver y consultar 
+Tratamiento   Ver y consultar 
+Citas  Ver y consultar 
+Ventas  crear, ver, consultar, modificar y eliminar 
+---P71---
+55 
+ 
+Cuadro 3. Continuación 
+Rol de usuario Módulos Privilegios  
+contador Login Ver e ingresar 
+Usuarios  Ver y consultar 
+Dentista   Ver y consultar 
+Almacén   Ver y consultar 
+Cubículos Ver y consultar 
+Paciente  Ver y consultar 
+Tratamiento  Ver y consultar 
+Citas  Ver y consultar 
+Ventas  Ver y consultar 
+ 
+Una vez, analizada y clasificada la información de los módulos, se determinó 
+que, para poder mostrar le las ventanas al usuario, estas deben de tener una 
+validación, autenticación y encriptación, mismas que Firebase proporciona, para 
+evitar que cualquier persona ingrese sin los requisitos necesarios (Figura 11 ). 
+    
+ 
+Figura 11. Requisitos de navegación del sistema. Fuente: elaboración propia de  
+acuerdo a las condiciones del proyecto. 
+ 
+
+---P72---
+56 
+ 
+3.1.2.2 Especificación 
+ 
+Con el fin de visualizar la estructura del sistema, así como la forma de navega r 
+en él, se realizaron los diagramas pertinentes, que muestran como interactua r 
+con el sistema de manera lógica y ordenada. Se empezó con el diseño de  la 
+base de datos en el software StarUML, la cual fue acorde a las especificaciones 
+y requerimientos que la clínica solicitó (Figura 12 ). Primero se realizó bajo el 
+modelo de entidad relación, en donde se muestra las tablas y sus atributos, 
+relacionados según el funcionamiento del sistema. 
+ 
+ 
+Figura 12. Base de datos relacional del sistema. Fuente: elaboración propia de 
+acuerdos a las condiciones del proyecto. 
+ 
+
+---P73---
+57 
+ 
+A partir de lo anterior, se convirtió la base de datos relacional a una no 
+relacional para que pueda ser manejada por la plataforma basada en la nub e 
+Firebase (Cuadro 4 ). 
+ 
+Cuadro 4. Criterios de base datos manejado por Firebase. Fuente: elaboració n 
+propia de acuerdo a las condiciones del proyecto. 
+Base de datos relacional  Base de datos manejado por Firebase 
+Database Database 
+Tablas Colecciones 
+Filas Documentos 
+Columnas Campos 
+Índice Índice 
+Uniones Referencias  
+Llave primaria Autogenerado  
+ 
+Con los criterios, dentro de la plataforma Firebase en la sección de Firestore, 
+cada una de las tablas, empezando por los pacientes, se convirtió en un a 
+colección (Figura 13 ). 
+ 
+Figura 13. Creación de la colección para los pacientes. Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+---P74---
+58 
+ 
+Dentro de esta colección, se agregó los documentos con un identificador 
+automático generado por la plataforma Firebase que pasa a ser un document o y 
+sus respectivos campos, con un valor de ejemplo para ser detectada por el 
+sistema y el tipo de dato según corresponda , bajo las columnas de la tabla 
+relacional, así mismo se muestra la pantalla de la vista de la primera colección  
+en proceso de registro de los datos llamada paciente (Figura 14 ). 
+ 
+ 
+Figura 14. Campos de la colección paciente. Fuente: elaboración propia  de 
+acuerdo a las condiciones del proyecto. 
+ 
+Una vez terminada de rellenar los campos de la colección del paciente, con su s 
+respectivo registros, el tipo de dato para cada uno según corresponda y el va lor 
+bajo los requerimientos de la clínica dental Merlos; la plataforma Firebase por 
+defecto autogenera y asigna un identificador (ID) único y exclusivo para el 
+primer documento del campo para el paciente en valor hexadecimal ha bilitado 
+
+---P75---
+59 
+ 
+por la empresa Google, que está cifrada y es segura, misma que contiene tod a 
+la información necesaria y con ello facilitar al sistema las transacciones 
+necesarias que un usuario realice como: editar, eliminar, insertar y hac er 
+búsquedas (Figura 15). 
+ 
+ 
+Figura 15. Vista de la colección paciente en Firestore de Firebase. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 
+ 
+Bajo los criterios para migrar la información, el modelo relacional pasó a 
+convertirse a una base de datos de tipo NoSQL basada en colecciones con sus 
+respectivos documentos, campos y valores, para su uso en el sistema en 
+formato de tipo JSON; al momento de ser creadas en la sección de Firestore, 
+permanecen seguras y la misma plataforma de Firebase, mediante un cifrado 
+desarrollado por la empresa Google, se encarga de evitar que cualquier otra 
+
+---P76---
+60 
+ 
+persona sin los permisos pueda entrar para alterar la información mantenida e n 
+toda la base de datos. 
+ 
+Después de terminar con el diseño de la base de datos en el mod elo relacional, 
+convertida en una de tipo NoSQL, junto a los módulos, se diseñó los casos de  
+uso, con cinco apartados para todos los usuario y sus interacciones con las 
+ventanas de navegación, en donde se desarrolló un total de veint inueve casos 
+de uso por cada módulo, que especifican la comunicación y el comportamiento  
+del sistema, en el software de modelado StarUML; se muestra el caso de  uso 
+del usuario administrador en el módulo del cubículo con la funcionali dad del 
+sistema al navegar en ella (Figura 16). 
+ 
+ 
+Figura 16. Casos de uso rol administrador, módulo cubículo. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 
+ 
+
+---P77---
+61 
+ 
+Terminada los casos de uso para el tipo de usuario con l os respectivos 
+módulos, se da inicio con el diagramado de datos, realizado en el software de 
+modelado StarUML, que muestra los procesos y la arquitectura física del 
+sistema, para detallar los artefactos a construir en ella, que es necesario para la 
+secuencia de la navegación en la interfaz y del comportamiento que te ndrá una 
+vez que esté en funcionamiento y que el usuario pueda navegar sin ten er 
+dificultades al pasar por cada módulo, ya que a partir de este diagrama se  
+conectan los enlaces (link) que hacen posible el intercambio de informació n; se 
+muestra parte del total del diagrama (Figura 17 ). 
+ 
+ 
+ 
+Figura 17. Diagrama datos del sistema. Fuente: elaboración propia de ac uerdo 
+a las condiciones del proyecto. 
+ 
+Para representar la interacción del sistema, se realizó el diagrama de 
+secuencias, que describe el comportamiento dinámico de las ventanas de 
+
+---P78---
+62 
+ 
+navegación de la clínica, haciendo énfasis en la secuencia de los mensajes 
+intercambiados, según el rol de usuario que ingrese y las especificaciones del 
+sistema, que depende del diagrama de datos para su construcción. El diagrama 
+de secuencia es parte fundamental para que el sistema este bien estructura do 
+de tal manera que cuando un usuario hace una petición de ingreso, se  
+represente un orden estructurado que inicia una vez que la plataforma Fireba se 
+valide y autentifique los datos de la cuenta de usuario con la con traseña para 
+llegar a la página principal y descender paso a paso para marcar la secuen cia 
+de interacciones en cada uno de los módulos con los permisos que las 
+funciones de Firebase (Functions)  tenga para el rol del usuario con la sesión 
+iniciada . Por lo tanto, se construyó un total de cinco diagramas de secuencia, se 
+presenta la vista del administrador (Figura 18 ). 
+ 
+ 
+Figura 18. Diagrama de secuencia del sistema. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+
+---P79---
+63 
+ 
+Definidos y realizados todos y cada uno de los diagramas que son parte  
+fundamental para el desarrollo del sistema, se llevó a cabo el diseño de  la 
+maquetación, misma que muestra un prototipo de la interfaz que el usuario verá 
+al momento de navegar en ella, donde se incluye los botones, cajas de texto, 
+tablas, iconos, contenedores, texto, entro otros; elaborado en el software de 
+diseño de prototipo y editor Figma, incluye la interfaz del módulo de acceso  al 
+sistema Login y cinco más, para cada usuario; se muestra el diseño de la vista 
+de dentista (Figura 19). 
+ 
+ 
+Figura 19. Maquetación de la interfaz del sistema. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+ 
+ 
+ 
+ 
+
+---P80---
+64 
+ 
+3.1.3 P ila 
+ 
+Terminada la planificación, se realizó la pila del proyecto, en la cual se llevó a 
+cabo los pendientes necesarios, la lista de productos para el desarrollo de los 
+sprints y las acciones para comenzar con la codificación. 
+ 
+3.1.3.1 Pendientes 
+ 
+Con el fin de ajustar mejor la maquetación del sistema de acuerdo a los 
+requerimientos de la clínica dental Merlos, el director de desarrollo de software 
+de la agencia de marketing digital y desarrollo de software, Biotec.io, bajo los 
+criterios del personal de la clínica, se cambió y rediseñó en su totalidad el 
+prototipo del sistema; mejorando las posiciones de la cabecera principal, con  un 
+menú desplegable para las opciones de navegación, tamaños de t exto, tipos de 
+iconos, botones, tablas, bajo otros esquemas de colores, mismas que se  
+desarrollar on con la librería Material UI, perteneciente al componente de estilos 
+de material de diseño (Material Design) desarrollada por Google. 
+ 
+Se instaló el programa Node.js en su última versión, que es la parte en donde 
+se ejecuta todo el código realizado, también se revisó el gestor de paq uete que 
+se ocupa para las dependencias dentro de React JS; al mismo tiempo se instaló 
+el editor de código Visual Studio Code, que ayuda a maquetar todo el código 
+para desarrollar el sistema. 
+ 
+---P81---
+65 
+ 
+Antes de dar inicio con la creación del proyecto para la parte de codificación, se 
+realizó un análisis de los pendientes necesarios para determinar el ta maño del 
+proyecto, con ello obtener la pila y formar la estructura lógica de los 
+componentes que al unirlos, crean a los módulos para la funcionalidad del 
+sistema, visibles en el navegador, utilizada por el usuario y que es nece sario 
+para tener un buen orden desde el acceso, hasta la parte de validación  y 
+autorización por parte de la plataforma Firebase llegando a las vistas, evitar q ue 
+cualquier persona sin los permisos pueda ver o alterar la información de la 
+clínica (Cuadro 5 ). 
+ 
+Cuadro 5 . Lógica de navegación de componentes . Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+Entrada Captura  Validación Principal  Petición  Dirección  Navegación 
+Acceso Acción 
+(Action)  Reductor 
+(Reducer) 
+ (index.js ) 
+renderizador Conexión 
+base de 
+datos 
+(Context 
+provider 
+Firebase) Padre 
+(App.js) Diseños (Material 
+UI) 
+Estado 
+(Redux) Sesiones 
+(Context 
+provider 
+sesión) Vistas 
+ 
+Tener limpieza en los componentes ayuda a que la información que se  maneje 
+sea seguro y exista un orden en la lógica de navegación, ya que estos permiten  
+el correcto funcionamiento del sistema; el acceso recibe las peticiones y las 
+acciones guardando la entrada al crear un estado que captura al usuario , por lo 
+que le indica al reductor validar los datos y ejecut ar los permisos una vez que 
+---P82---
+66 
+ 
+Firebase verifique las sesiones para poder buscar en el componente padre, la 
+ruta de las vistas junto al diseño de Material UI. 
+ 
+El módulo de la ventana Login, es la parte principal que un usuario 
+(administrador, dentista principal, dentista secundario, asistente de consultorio y 
+contador) de la clínica dental ve al ingresar en el sistema; y fue diseñada de 
+acuerdo al prototipo de maquetación final, por lo que tiene una ruta segura y 
+protegida, con cuentas validadas y autenticadas al hacer la petición de  ingreso , 
+misma que Firebase revisa si existe y sea correcta; configurada en la sección 
+de autenticación (Authentication), en donde se activan los medios (correo 
+electrónico de Gmail, Microsoft, entre otros) por las cuales un usuario podrá 
+tener el acceso total al sistema (Figura 20). 
+ 
+ 
+Figura 20. Configuración de autenticación de usuarios. Fuente: elaboració n 
+propia de acuerdo a las condiciones del proyecto. 
+
+---P83---
+67 
+ 
+EL módulo de la ventana Login , es una ruta libre, que se configura en los 
+componentes, dentro del código de React JS, ya que cualquier persona puede 
+verla, pero solo aquellos con los permisos pueden ingresar e interactuar con las 
+ventanas de navegación y las herramientas de Material UI, que son la p arte 
+física y visible del sistema (Cuadro 6). 
+ 
+Cuadro 6 . Módulos del sistema. Fuente: elaboración propia de acuerdo a las 
+condiciones del proyecto. 
+Módulos  Tipo  Permisos  
+Login Ruta libre Solicita credenciales Vista general 
+Herramientas (Material 
+UI) Ruta protegida Se necesita 
+credencial para ver Vista general 
+Ventanas de navegación 
+(Requerimientos) Ruta protegida Se necesita 
+credencial para ver Vistas según el rol 
+ 
+Para que el componente de acceso pueda identificar el rol en el módulo Login , 
+dentro de Firebase, se activan las funciones para que cuando un usuario  este 
+validado se reconozca el rol que lo identifica y mostrar los módulos ventanas de 
+navegación con los privilegios que tiene ; dentro de la sección de Funciones 
+(Cloud Functions) y se ejecuta después de haberse iniciado con la creación del 
+proyecto en el editor de código de visual Studio Code. 
+ 
+Se activa y se configura la secci ón de almacenamiento de archivos (Storage) , 
+que irá guardando fotos e imágenes para el perfil del usuario y de  la dentadura 
+del paciente. 
+ 
+---P84---
+68 
+ 
+Se revisa la sección de Firestore en la nube (Cloud Firestore), la base de datos 
+que contiene toda la información del sistema, citas, almacén, cubícu lo, dentista, 
+insumos, pacientes, tratamiento, usuario y ventas, que fue activada al crear las 
+colecciones con sus respectivos documentos y campos. Al mismo tiempo, s e 
+activa y se configura el hospedaje de archivos (Hosting), que contendrá to dos 
+los documentos trabajados en el framework React JS y los mostrará en el 
+navegador.    
+ 
+Para personalizar todos los módulos ventanas de navegación; en los 
+componentes trabajados con el framework React JS, se seleccionaron los 
+colores de la librería de estilos de Material UI , de acuerdo al prototipo de 
+maquetación final en su valor hexadecimal. 
+  
+Se seleccionaron las herramientas que dichos módulos tendrán a excepción del 
+Login; cuando un usuario ya esté validado y dar los privilegios de acu erdo al rol, 
+de las cuales son: barra de menú principal, barra de menú desplegabl e, 
+botones, cajas de texto, tipos de iconos, tablas, letras, imágenes, entre otros y 
+tendrá un botón común para todos los roles de usuario denominado cerra r 
+sesión que redirecciona por defecto a módulo de la ventana Login (Figura 21 ). 
+ 
+---P85---
+69 
+ 
+ 
+Figura 21. Selección de herramientas de Material UI. Fuente: elaboración propia 
+de acuerdo a las condiciones del proyecto. 
+ 
+Los módulos ventanas de navegación , pacientes, tratamientos, inventario 
+almacén, inventario cubículo, insumos por consulta, citas, ventas y dentistas , 
+tienen el mismo principio en cuanto a los requerimientos, pero solo t endrán los 
+privilegios (crear, ver consultar, modificar y eliminar) de acuerdo al rol que este  
+activo; para evitar que cualquier intruso entre sin los permisos que la plataform a 
+Firebase administra y que es programada en el framework React JS. 
+ 
+Para completar estos pendientes, se realizó la lista de productos a desarro llar 
+por sprint, las cuales son: 
+ 
+− Servidor. 
+− Sesiones. 
+
+---P86---
+70 
+ 
+− Renderizado y Material UI. 
+− Seguridad de usuario. 
+− Autorización con roles y funciones. 
+− Vistas y acciones.  
+ 
+3.1.3.2 Acciones  
+ 
+Teniendo l os pendientes necesarios con la lista del producto para conocer el 
+tamaño total del proyecto a construir y elaborada la lógica de navegación de los  
+componentes c on los módulos establecidos para el funcionamiento del sistema, 
+se dió inicio con la creación de la misma, dentro del editor de código de Visu al 
+Studio Code (Figura 22 ). 
+ 
+ 
+Figura 22. Creación del proyecto para la clínica dental. Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+
+---P87---
+71 
+ 
+El comando para la creación del proyecto según lo marca la guía oficial de 
+React JS es a partir del gestor de paquetes de Node.js, npx create-react- app 
+clinicadentalmerlos, en donde se instalan todas las dependencias necesari as, 
+que el framework utiliza para su correcta ejecución y que al terminar se muestra 
+en el navegador mediante un enlace local , http://localhost:3000 e indica que el 
+proyecto ha sido creado correctamente y listo para trabajar (Figura 23 ). 
+ 
+ 
+Figura 23. Vista del proyecto en el navegador. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+ 
+Al tener el proyecto creado, dentro del editor de código Visual Studio Code , se 
+crearon cinco carpetas para una mejor navegación y comunicación entre los 
+componentes, las cuales contienen todos los archivos que el sistema requiere 
+para su funcionamiento (Cuadro 7 ). 
+
+---P88---
+72 
+ 
+Cuadro 7. Estructura de las carpetas para la comunicación entre componentes . 
+Fuente: elaboración propia de acuerdo a las condiciones del 
+proyecto. 
+Carpetas  Subcarpetas y componentes 
+Servidor (server) Contexto y Firebase 
+Sesiones Acciones (Action) 
+Reductor (Reducer) 
+Tema (Theme) Tema del sistema 
+Pestañas Diseño (Layout) Bar (Menú) 
+Seguridad 
+vistas 
+Estados (Redux) Roles y funciones  
+ 
+Además, se instalaron y se agregaron las dependencias con los servicios para 
+ser interpretadas por React JS dentro del editor de código Visual Studio Code o 
+en la terminal de Windows con el comando de Node.js (npm install), que utiliza 
+el sistema como anexos propios del framework (rutas, imágenes, llaves 
+primarias y alertas), Firebase y Material UI (Figura 24 ). 
+ 
+ 
+Figura 24. Instalación de las dependencias de Material UI. Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+
+---P89---
+73 
+ 
+También se inicializaron los servicios de Firebase dentro del proyecto, esto a 
+partir de la cuenta de correo electrónico de Gmail, en donde se creó la b ase de 
+datos, para poder hacer uso de los servicios que ofrece la plataforma y 
+garantizar que solo dicha cuenta tenga el control total a las acciones q ue se 
+realicen y configurar Firebase para tener una mejor seguridad (Figura 25 ). 
+ 
+ 
+Figura 25. Configuración de Firebase en el proyecto. Fuente: elaboración propia  
+de acuerdo a las condiciones del proyecto. 
+ 
+De acuerdo a la lista de la pila de productos, se establecieron los sprints para el 
+desarrollo del proyecto y las iteraciones se llevan a cabo en tres momen tos, las 
+cuales son: revisión, retrospectiva (exploración y ejecución) y producto, en 
+donde una vez terminadas entran a la fase de incremento (entrega y aume nto), 
+para entregar las partes que conforman el sistema, terminado y funcional, ha sta 
+la culminación total del proyecto. 
+
+---P90---
+74 
+ 
+3.1.4 Sprint de servidor (server) 
+ 
+En este sprint se realizaron las configuraciones de Firebase para conectar todos 
+los servicios con el proyecto e importarlos en los componentes que el sistema 
+requiere y que permite hacer uso de la información en la plataforma. 
+ 
+3.1.4.1 Revisión  
+ 
+Para tener comunicación entre los componentes con los servicios de Firebase, 
+en la plataforma, se activó la configuración que se autogenera al crear la base 
+de datos, hace conexión con el sistema y que permite manejar toda la 
+información de las colecciones de Firestore (Figura 26 ). 
+ 
+ 
+Figura 26. Configuración de los servicios de Firebase. Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+
+---P91---
+75 
+ 
+3.1.4.2 Retrospectiva 
+ 
+En esta sección, se desarrollaron los componentes que realiza la petición a la 
+base de datos dentro de la sección de Firestore en Firebase. 
+ 
+1) Exploración. En el editor de código Visual Studio Code, en un componen te 
+firebase.js, se importó la paquetería de Firebase para que React JS lo pueda 
+ejecutar correctamente, al mismo tiempo crear una clase para inicializar los 
+servicios de la plataforma; también en un nuevo componente, context.js se 
+creó una función llamado contexto (Context), que proporciona una mane ra 
+correcta para pasar toda la información de la base de datos al sistem a de tal 
+manera que se pueda emplear en todos los componentes (Figura 27 ). 
+ 
+ 
+Figura 27. Configuración del método Context. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+
+---P92---
+76 
+ 
+2) Ejecución. El comando para ejecutar las dependencias del proyecto y ser 
+visualizada en la terminal de Windows, es a partir del gestor de paquetes 
+Node.js (npm run start) con ello, si no se muestran errores, la comunicación 
+con la base de datos es exitosa y la información puede ser manejada. 
+ 
+3.1.4.3 Producto (correcciones) 
+ 
+Al tener comunicación correcta entre la plataforma Firebase y el proyecto, se 
+realizó la corrección del componente firebase.js, la cual se mejoró la clase para 
+anexar los demás servicios como: almacenamiento de archivos (Storage) y 
+autenticación de usuarios (Authorization), y al final se exportó para ser utilizada  
+de manera global (Figura 28 ). 
+ 
+ 
+Figura 28. Corrección de la configuración de Firebase. Fuente: elaboración 
+propia de acuerdo a las condiciones del proyecto. 
+
+---P93---
+77 
+ 
+3.1.4.4 incremento (entrega y aumento) 
+ 
+Al tener configurado las dependencias de Firebase correctamente y con 
+comunicación a la base de datos de manera exitosa, se procedió a e ntregar y 
+dar aumento al servidor que está ubicada dentro carpeta server y es nec esario 
+para el manejo e interpretación de la información.  
+ 
+3.1.5 Sprint de sesiones (sesion) 
+ 
+En este segundo sprint, se realizaron todos los componentes que veri fican y 
+validan la información de los usuarios que intentan ingresar al sistema, así  
+también funciones en código para las alertas de errores y que capturan la 
+información del usuario, otras para hacer dinámico la información que es visible 
+en las ventanas de navegación, que en conjunto garantizan la segurid ad de la 
+información que es maneja da por Firebase. 
+ 
+3.1.5.1 Revisión  
+ 
+Para que las autenticaciones como: iniciar sesión, cambiar sesión y salir sesión, 
+sean validas y correctas, en el editor de código Visual Studio Code, se creó la 
+carpeta sesión y dentro de ella una subcarpeta de nombre reducer, la cu al 
+contiene componentes que verifica que la información del usuario sea  la misma 
+que se guarda en la colección de Firestore y también en autenticación 
+(Authentication), donde analiza que los atributos (id, nombre, apellido, em ail y 
+---P94---
+78 
+ 
+contraseña) sean exactamente iguales al momento de solicitar el ingreso al 
+sistema, la cual se denomina sesionReducer.js (Figura 29). 
+ 
+ 
+Figura 29. Configuración del reductor de sesión. Fuente: elaboración propia de 
+acuerdo a las condiciones del proyecto. 
+ 
+También se creó una alerta que se muestra al detectar que los datos no se an 
+los mismos o que se cometió algún error, en un componente de nombre  
+openSnackbarReducer.js. 
+ 
+3.1.5.2 Retrospectiva 
+ 
+En este apartado se desarrollaron funciones para la transmisión de los d atos de 
+Firebase para la manipulación dinámica dentro del sistema. 
+ 
+
+---P95---
+79 
+ 
+1) Exploración . Dentro de la carpeta sesión, se creó otra subcarpeta llamada 
+acciones (Action), la cual contiene componentes con funciones que hace las 
+peticiones para llamar los servicios de Firebase para cada módulo y sus 
+ventanas, que es visible, solo cuando un usuario este ingresado y vali dado 
+en el sistema y muestra toda información en tablas, de las colecciones en la 
+sección de Firestore. Dentro de estos componentes se crearon dos 
+funciones (siguiente y atrás) para la paginación de las ventanas que ayuda a 
+realizar las búsquedas en tiempo real, y un archivo de nombre keyword.js, 
+cada registro en las colecciones, contiene un clave guardado en un arreglo 
+para que las palabras que conforman la información en minúscula pue dan 
+ser ubicadas con mayor facilidad y sin marcar errores, que se guarda en 
+Firestore (Figura 30 ). 
+ 
+ 
+Figura 30. Configuración de las acciones para cada componente. Fuente: 
+elaboración propia de acuerdo a las condiciones del proyecto. 

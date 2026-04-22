@@ -17,7 +17,7 @@ Anexo 9.3 — ITVO-AC-PR-05-04 (aviso de realización del acto)
 Si entregan una versión nueva de algún formato, sustituye el .docx correspondiente aquí
 (mismo nombre de archivo en templates/) o configura la ruta absoluta en application.properties.
 
-Marcadores que el SIT reemplaza en el .docx (texto plano en Word):
+Marcadores que el SITVO reemplaza en el .docx (texto plano en Word):
   {{NOMBRE}}, {{NUMERO_CONTROL}}, {{CARRERA}}, {{PROYECTO}}, {{FECHA_GENERACION}},
   {{MODALIDAD}} (anexo 9.1), y equivalentes ${NOMBRE}, [NOMBRE], <<NOMBRE>>.
   Alias: NOMBRE_COMPLETO, NO_CONTROL, NOMBRE_PROYECTO, etc. (mismo valor que arriba).

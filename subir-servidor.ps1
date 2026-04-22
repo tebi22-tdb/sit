@@ -1,4 +1,4 @@
-# Script para subir SIT al servidor 77.37.74.122
+# Script para subir SITVO al servidor 77.37.74.122
 # Ejecutar en PowerShell desde la raíz del proyecto: .\subir-servidor.ps1
 # Te pedirá la contraseña de root dos veces (JAR y frontend).
 

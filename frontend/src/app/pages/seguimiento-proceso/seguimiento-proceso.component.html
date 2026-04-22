@@ -7,7 +7,10 @@
   ></app-header>
 
   <main class="seg-main">
-    <h1 class="seg-titulo">Seguimiento</h1>
+    <div class="seg-cabecera-main">
+      <h1 class="seg-titulo">Seguimiento</h1>
+      <button type="button" class="seg-btn-volver" (click)="volverInicio()">Volver</button>
+    </div>
 
     <section class="seg-kpis">
       <button type="button" class="kpi kpi-exp" [class.kpi-activo]="esEstadoActivo('todos')" (click)="seleccionarEstado('todos')"><span>Expedientes</span><strong>{{ totalExpedientes }}</strong></button>

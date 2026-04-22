@@ -12,14 +12,14 @@ export type PerfilCreacionUsuario =
   | 'servicios_escolares';
 
 export const PERFILES_CREACION_USUARIO: { id: PerfilCreacionUsuario; etiqueta: string }[] = [
-  { id: 'apoyo_titulacion', etiqueta: 'División de estudios profesionales — apoyo a titulación' },
-  { id: 'division_estudios_prof_admin', etiqueta: 'División de estudios profesionales — administrativo' },
-  { id: 'academico_general', etiqueta: 'Departamento académico' },
-  { id: 'academico_ingenierias', etiqueta: 'Departamento de ingenierías' },
-  { id: 'academico_virtuales', etiqueta: 'Carreras virtuales' },
-  { id: 'academico_ciencias_basicas', etiqueta: 'Departamento de ciencias básicas' },
-  { id: 'academico_economico_administrativo', etiqueta: 'Departamento económico administrativo' },
-  { id: 'servicios_escolares', etiqueta: 'Departamento de servicios escolares' },
+  { id: 'apoyo_titulacion', etiqueta: 'División de Estudios Profesionales — Apoyo a Titulación' },
+  { id: 'division_estudios_prof_admin', etiqueta: 'División de Estudios Profesionales — Administrativo' },
+  { id: 'academico_general', etiqueta: 'Coordinacion de apoyo a la titulacion' },
+  { id: 'academico_ingenierias', etiqueta: 'Departamento de Ingenierías' },
+  { id: 'academico_virtuales', etiqueta: 'Carreras Virtuales' },
+  { id: 'academico_ciencias_basicas', etiqueta: 'Departamento de Ciencias Básicas' },
+  { id: 'academico_economico_administrativo', etiqueta: 'Departamento Económico Administrativo' },
+  { id: 'servicios_escolares', etiqueta: 'Departamento de Servicios Escolares' },
 ];
 
 export interface DatosRolDesdePerfil {

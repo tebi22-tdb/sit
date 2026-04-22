@@ -13,9 +13,9 @@ class RootController {
     fun index(): String = """
         <!DOCTYPE html>
         <html>
-        <head><meta charset="UTF-8"><title>SIT - API</title></head>
+        <head><meta charset="UTF-8"><title>SITVO - API</title></head>
         <body style="font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem;">
-            <h1>SIT - Sistema Integral de Titulación</h1>
+            <h1>SITVO - Sistema Integral de Titulación</h1>
             <p>Este es el <strong>backend</strong> (API). Aquí no se muestra la aplicación.</p>
             <p>Para usar el sistema, abre el <strong>frontend</strong> en:</p>
             <p><a href="http://localhost:4200" style="font-size: 1.2rem;">http://localhost:4200</a></p>

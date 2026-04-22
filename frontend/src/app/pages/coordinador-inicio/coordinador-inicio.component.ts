@@ -19,43 +19,138 @@ import { AuthService } from '../../services/auth.service';
               <h2>{{ tituloCardAlta }}</h2>
               <p>{{ descripcionCardAlta }}</p>
             </div>
-            <div class="card-icono" aria-hidden="true">Alta</div>
+            <div class="card-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="card-icono-svg">
+                <path
+                  d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm6 1.5V9h4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path d="M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M12 10v6M9 13h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </div>
           </button>
           <button type="button" class="card" (click)="irSeguimientoProceso()">
             <div class="card-texto">
               <h2>Seguimiento del proceso</h2>
               <p>Envíos a académicos, anexos 9.1 / 9.3, sinodales y acto protocolario.</p>
             </div>
-            <div class="card-icono" aria-hidden="true">Seg</div>
-          </button>
-          <button type="button" class="card">
-            <div class="card-texto">
-              <h2>Revisiones</h2>
-              <p>Consulta el estado de revisión académica .</p>
+            <div class="card-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="card-icono-svg">
+                <path
+                  d="M4 19h16M7 16v-4M12 16V8M17 16v-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="m6 8 4-3 3 2 5-3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </div>
-            <div class="card-icono" aria-hidden="true">Rev</div>
+          </button>
+          <button type="button" class="card" (click)="irRevisiones()">
+            <div class="card-texto">
+              <h2>Coordinación de apoyo a la titulación</h2>
+              <p>Consulta el estado de la revisión académica.</p>
+            </div>
+            <div class="card-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="card-icono-svg">
+                <path
+                  d="m4 12 5 5L20 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.6" />
+              </svg>
+            </div>
           </button>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .coordinador-inicio { min-height: 100vh; background: #f5f7fb; }
-    .contenido { padding: 0.6rem 1.5rem 1.5rem; }
-    .titulo { margin: 0 0 .9rem; text-align: center; font-size: 2.05rem; font-weight: 700; color: #1f2937; letter-spacing: .2px; }
-    .cards { max-width: 1060px; margin: 1.05rem auto 0; display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 0.75rem; }
-    .card { border: 1px solid #aac7ec; border-radius: 16px; background: #b9d9ff; padding: .82rem .9rem; min-height: 122px; display: flex; align-items: center; justify-content: space-between; gap: .72rem; text-align: left; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
-    .card:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.10); border-color: #7faedc; }
-    .card-texto h2 { margin: 0 0 .3rem; font-size: 1.7rem; font-weight: 650; color: #1f2937; line-height: 1.02; }
-    .card-texto p { margin: 0; font-size: .9rem; color: #374151; line-height: 1.25; max-width: 28ch; }
-    .card-icono { width: 88px; height: 88px; border-radius: 14px; background: rgba(255,255,255,.78); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: #1f4c8f; flex-shrink: 0; }
+    .coordinador-inicio { min-height: 100vh; background: #f3f6fa; }
+    .contenido { padding: 0.75rem 1.5rem 1.75rem; }
+    .titulo { margin: 0 0 0.8rem; text-align: center; font-size: 2rem; font-weight: 700; color: #1f2937; letter-spacing: 0.2px; }
+    .cards { max-width: 1080px; margin: 0.95rem auto 0; display: grid; grid-template-columns: repeat(3, minmax(250px, 1fr)); gap: 0.9rem; }
+    .card {
+      border: 1px solid #a8c3e4;
+      border-radius: 14px;
+      background: #aecded;
+      padding: 1rem 1rem 1.05rem;
+      min-height: 148px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+    }
+    .card:hover {
+      transform: translateY(-1px);
+      background: #a7c7e8;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+      border-color: #7da2cb;
+    }
+    .card:focus-visible {
+      outline: 2px solid #1f4c8f;
+      outline-offset: 2px;
+    }
+    .card-texto h2 {
+      margin: 0 0 0.42rem;
+      font-size: 1.6rem;
+      font-weight: 650;
+      color: #1f2937;
+      line-height: 1.04;
+      letter-spacing: -0.01em;
+      min-height: 3.2rem;
+    }
+    .card-texto p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #31445f;
+      line-height: 1.35;
+      max-width: 27ch;
+      min-height: 3.6rem;
+    }
+    .card-icono {
+      width: 92px;
+      height: 92px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(31, 76, 143, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1f4c8f;
+      flex-shrink: 0;
+    }
+    .card-icono-svg { width: 48px; height: 48px; }
     @media (max-width: 900px) {
-      .contenido { padding: 0.6rem 1rem 1.2rem; }
+      .contenido { padding: 0.6rem 1rem 1.3rem; }
       .titulo { font-size: 1.8rem; }
-      .cards { grid-template-columns: 1fr; max-width: 760px; }
-      .card { min-height: 116px; }
-      .card-texto h2 { font-size: 1.45rem; }
-      .card-icono { width: 78px; height: 78px; font-size: 1.7rem; }
+      .cards { grid-template-columns: 1fr; max-width: 760px; gap: 0.75rem; }
+      .card { min-height: 128px; padding: 0.88rem 0.92rem; }
+      .card-texto h2 { font-size: 1.4rem; min-height: auto; }
+      .card-texto p { min-height: auto; }
+      .card-icono { width: 78px; height: 78px; }
+      .card-icono-svg { width: 40px; height: 40px; }
     }
   `],
 })
@@ -83,5 +178,9 @@ export class CoordinadorInicioComponent {
 
   irSeguimientoProceso(): void {
     this.router.navigate(['/home/seguimiento-proceso']);
+  }
+
+  irRevisiones(): void {
+    this.router.navigate(['/home/revisiones']);
   }
 }

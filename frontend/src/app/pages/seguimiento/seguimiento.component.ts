@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../layout/header/header.component';
-import { EgresadoService, EgresadoDetail } from '../../services/egresado.service';
+import { EgresadoService, EgresadoDetail, RevisionApi } from '../../services/egresado.service';
 
 /** Paso mostrado al alumno (solo lectura). */
 export interface PasoAlumnoVista {
@@ -50,6 +50,12 @@ export class SeguimientoComponent implements OnInit {
   datos: EgresadoDetail | null = null;
   cargando = true;
   error = '';
+  cargandoRevisionesEnviadas = false;
+  revisionesEnviadas: RevisionApi[] = [];
+
+  get revisionesParaCorregir(): RevisionApi[] {
+    return this.revisionesEnviadas.filter((r) => r.resultado === 'observaciones');
+  }
 
   get esResidenciaProfesional(): boolean {
     const m = this.datos?.datos_proyecto?.modalidad?.trim() ?? '';
@@ -260,6 +266,7 @@ export class SeguimientoComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarSeguimiento();
+    this.cargarRevisionesEnviadas();
   }
 
   private cargarSeguimiento(): void {
@@ -277,6 +284,20 @@ export class SeguimientoComponent implements OnInit {
         } else {
           this.error = 'No se pudo cargar el seguimiento. ¿Está el backend en ejecución?';
         }
+      },
+    });
+  }
+
+  private cargarRevisionesEnviadas(): void {
+    this.cargandoRevisionesEnviadas = true;
+    this.egresadoService.getMisRevisionesEnviadas().subscribe({
+      next: (lista) => {
+        this.cargandoRevisionesEnviadas = false;
+        this.revisionesEnviadas = lista;
+      },
+      error: () => {
+        this.cargandoRevisionesEnviadas = false;
+        this.revisionesEnviadas = [];
       },
     });
   }

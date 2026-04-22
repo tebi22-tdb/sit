@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { HeaderComponent } from '../../../layout/header/header.component';
+import { AuthService } from '../../../services/auth.service';
 import { EgresadoService, RevisionApi } from '../../../services/egresado.service';
 
 @Component({
@@ -31,12 +32,17 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
   observacionesNueva = '';
   guardando = false;
   mensaje = '';
+  mensajeEnvio = '';
   resultadoNueva: 'observaciones' | 'aprobado' = 'observaciones';
   mostrarPanelRevision = true;
+  enviandoRevisionId: string | null = null;
 
   subiendoDocumento = false;
   mensajeSubidaArchivo = '';
   errorSubidaArchivo = false;
+
+  /** Panel secundario: reemplazo de archivo (colapsado por defecto). */
+  panelReemplazoExpandido = false;
 
   private subs = new Subscription();
 
@@ -44,6 +50,7 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private egresadoService: EgresadoService,
+    private authService: AuthService,
     private sanitizer: DomSanitizer,
   ) {}
 
@@ -115,7 +122,11 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
   }
 
   volver(): void {
-    this.router.navigate(['/departamento-academico']);
+    if (this.authService.isAcademico()) {
+      this.router.navigate(['/departamento-academico']);
+    } else {
+      this.router.navigate(['/home/revisiones']);
+    }
   }
 
   seleccionarRevision(r: RevisionApi): void {
@@ -127,12 +138,18 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
     this.mostrarPanelRevision = true;
     this.observacionesNueva = '';
     this.mensaje = '';
+    this.mensajeEnvio = '';
+  }
+
+  togglePanelReemplazo(): void {
+    this.panelReemplazoExpandido = !this.panelReemplazoExpandido;
   }
 
   onArchivoReemplazo(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file || !this.id || this.subiendoDocumento) return;
+    this.panelReemplazoExpandido = true;
     this.subiendoDocumento = true;
     this.mensajeSubidaArchivo = '';
     this.errorSubidaArchivo = false;
@@ -172,20 +189,68 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
 
     this.subs.add(
       this.egresadoService.crearRevision(this.id, cuerpo).subscribe({
-        next: () => {
+        next: (creada) => {
           this.guardando = false;
           this.observacionesNueva = '';
           this.mensaje = resultado === 'aprobado' ? 'Documento aprobado.' : 'Revisión guardada con observaciones.';
+          this.mensajeEnvio = '';
           if (resultado === 'aprobado') {
-            this.router.navigate(['/departamento-academico']);
+            this.volver();
             return;
           }
           this.cargarRevisiones(true);
+          this.revisionSeleccionada = creada;
         },
         error: (err) => {
           this.guardando = false;
           const msg = err?.error?.error ?? err?.error?.message ?? err?.message ?? err?.statusText;
           this.mensaje = msg ? `No se pudo guardar la revisión: ${msg}` : 'No se pudo guardar la revisión.';
+        },
+      }),
+    );
+  }
+
+  /** Guarda revisión con observaciones y la envía inmediatamente al egresado. */
+  guardarYEnviarRevision(): void {
+    if (this.guardando || !this.observacionesNueva.trim()) return;
+    this.guardando = true;
+    this.mensaje = '';
+    this.mensajeEnvio = '';
+    this.subs.add(
+      this.egresadoService
+        .crearRevision(this.id, { resultado: 'observaciones', observaciones: this.observacionesNueva })
+        .subscribe({
+          next: (creada) => {
+            this.observacionesNueva = '';
+            this.enviarRevision(creada);
+          },
+          error: (err) => {
+            this.guardando = false;
+            const msg = err?.error?.error ?? err?.error?.message ?? err?.message ?? err?.statusText;
+            this.mensaje = msg ? `No se pudo guardar la revisión: ${msg}` : 'No se pudo guardar la revisión.';
+          },
+        }),
+    );
+  }
+
+  /** Envía una revisión al egresado para que aparezca en su seguimiento. */
+  enviarRevision(r: RevisionApi): void {
+    if (!r?.id || this.enviandoRevisionId) return;
+    this.enviandoRevisionId = r.id;
+    this.mensajeEnvio = '';
+    this.subs.add(
+      this.egresadoService.enviarRevisionAEgresado(this.id, r.id).subscribe({
+        next: () => {
+          this.enviandoRevisionId = null;
+          this.guardando = false;
+          this.mensajeEnvio = `Revisión ${r.numero_revision} enviada al egresado para corrección.`;
+          this.cargarRevisiones(true);
+        },
+        error: (err) => {
+          this.enviandoRevisionId = null;
+          this.guardando = false;
+          const msg = err?.error?.error ?? err?.error?.message ?? err?.message ?? err?.statusText;
+          this.mensajeEnvio = msg ? `No se pudo enviar la revisión: ${msg}` : 'No se pudo enviar la revisión.';
         },
       }),
     );

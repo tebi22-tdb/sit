@@ -256,7 +256,12 @@ class EgresadoService(
 
     fun contarParaDepartamento(academicoUsername: String): Map<String, Int> {
         val allBase = filtrarEgresadosPorCarreraSiAcademico(egresadoRepository.findAll(), academicoUsername)
-        val all = if (esAcademicoSoloRevisiones(academicoUsername)) allBase.filter { !esResidenciaProfesional(it) } else allBase
+        val all =
+            if (bandejaDepartamentoExcluyeResidencia(academicoUsername)) {
+                allBase.filter { !esResidenciaProfesional(it) }
+            } else {
+                allBase
+            }
         val pendientes = all.count {
             it.fechaEnviadoDepartamentoAcademico != null &&
                 it.fechaRecibidoRegistroLiberacion == null &&
@@ -281,7 +286,12 @@ class EgresadoService(
 
     fun listarParaDepartamento(estado: String, academicoUsername: String): List<DepartamentoListItemDto> {
         val allBase = filtrarEgresadosPorCarreraSiAcademico(egresadoRepository.findAll(), academicoUsername)
-        val all = if (esAcademicoSoloRevisiones(academicoUsername)) allBase.filter { !esResidenciaProfesional(it) } else allBase
+        val all =
+            if (bandejaDepartamentoExcluyeResidencia(academicoUsername)) {
+                allBase.filter { !esResidenciaProfesional(it) }
+            } else {
+                allBase
+            }
         val norm = estado.trim().lowercase()
         val lista = when (norm) {
             "aprobados" -> all.filter { it.fechaRecibidoRegistroLiberacion != null }
@@ -332,13 +342,12 @@ class EgresadoService(
      * Si la lista está vacía (usuarios antiguos), no se filtra.
      */
     fun academicoPuedeAccederAEgresado(academicoUsername: String, egresadoId: String): Boolean {
-        if (esAcademicoSoloRevisiones(academicoUsername)) {
-            val e = cargarEgresadoPorId(egresadoId) ?: return false
-            if (esResidenciaProfesional(e)) return false
+        val e = cargarEgresadoPorId(egresadoId) ?: return false
+        if (bandejaDepartamentoExcluyeResidencia(academicoUsername) && esResidenciaProfesional(e)) {
+            return false
         }
         val permitidas = carrerasFiltroAcademico(academicoUsername) ?: return true
         if (permitidas.isEmpty()) return true
-        val e = cargarEgresadoPorId(egresadoId) ?: return false
         return carreraPermitidaParaAcademico(e.datos_personales.carrera, permitidas)
     }
 
@@ -366,6 +375,17 @@ class EgresadoService(
         val sinSegmento = u.segmentoAcademico?.trim().isNullOrEmpty()
         val sinCarreras = u.carrerasAsignadas.isEmpty()
         return sinSegmento && sinCarreras
+    }
+
+    /**
+     * Coordinación de apoyo a la titulación (y académico general sin carreras): solo modalidades distintas
+     * a Residencia Profesional. Los académicos por departamento/segmento siguen viendo todas las modalidades de sus carreras.
+     */
+    private fun bandejaDepartamentoExcluyeResidencia(username: String): Boolean {
+        if (esAcademicoSoloRevisiones(username)) return true
+        val u = usuarioRepository.findByUsername(username.trim()) ?: return false
+        val r = u.rol.trim().lowercase().replace(' ', '_')
+        return r == "coordinador" || r == "apoyo_titulacion" || r == "division_estudios_prof_admin"
     }
 
     private fun carreraPermitidaParaAcademico(carrera: String, permitidas: Set<String>): Boolean {
@@ -413,6 +433,41 @@ class EgresadoService(
             contentType = adj.content_type.ifBlank { "application/octet-stream" },
             fileName = adj.nombre_original.ifBlank { "documento" },
         )
+    }
+
+    /**
+     * Sustituye el documento adjunto del egresado (p. ej. desde revisión académica / coordinación).
+     * Sube el nuevo archivo a GridFS, actualiza el registro y elimina el binario anterior si existía.
+     */
+    fun reemplazarDocumentoAdjunto(id: String, archivo: MultipartFile): Boolean {
+        if (archivo.isEmpty) return false
+        val objectId = try { ObjectId(id) } catch (_: Exception) { return false }
+        val existente = egresadoRepository.findById(objectId).orElse(null) ?: return false
+        val ahora = Instant.now()
+        val gridFsIdAnterior = existente.documento_adjunto.gridfs_id
+        val gridFsIdNuevo = subirArchivo(archivo)
+        val nuevoAdj = DocumentoAdjunto(
+            gridfs_id = gridFsIdNuevo,
+            nombre_original = archivo.originalFilename ?: "",
+            content_type = archivo.contentType ?: "application/octet-stream",
+            tamanio_bytes = archivo.size,
+            fecha_subida = ahora,
+        )
+        egresadoRepository.save(
+            existente.copy(
+                documento_adjunto = nuevoAdj,
+                fecha_actualizacion = ahora,
+            ),
+        )
+        if (gridFsIdAnterior != null) {
+            try {
+                gridFsTemplate.delete(Query.query(Criteria.where("_id").`is`(gridFsIdAnterior)))
+            } catch (e: Exception) {
+                log.warn("No se pudo eliminar el adjunto GridFS anterior {}: {}", gridFsIdAnterior, e.message)
+            }
+        }
+        log.info("Documento adjunto reemplazado para egresado id={}", id)
+        return true
     }
 
     fun marcarEnviadoDepartamentoAcademico(id: String): Boolean {

@@ -1,5 +1,5 @@
 /**
- * Constantes e interfaces compartidas del SIT.
+ * Constantes e interfaces compartidas del SITVO.
  * Carreras, niveles, modalidades y modelo del formulario de egresado.
  */
 

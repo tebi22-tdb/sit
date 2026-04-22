@@ -156,6 +156,12 @@ export class HomeComponent implements OnInit {
     else this.cargarLista();
   }
 
+  onCambioVista(valor: string): void {
+    if (valor === 'egresados' || valor === 'usuarios') {
+      this.cambiarTabLista(valor);
+    }
+  }
+
   cerrarDetalle(): void {
     this.detalle = null;
     this.textoBusqueda = '';

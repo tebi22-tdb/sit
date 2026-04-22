@@ -19,4 +19,6 @@ data class Revision(
     val observaciones: String? = null,
     @Field("detalle_observaciones") val detalleObservaciones: List<String>? = null,
     @Field("fecha_envio_siguiente") val fechaEnvioSiguiente: Instant? = null,
+    @Field("enviado_al_egresado") val enviadoAlEgresado: Boolean = false,
+    @Field("fecha_envio_egresado") val fechaEnvioEgresado: Instant? = null,
 )

@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { AuthService } from '../../services/auth.service';
 import { obtenerSegmentoAcademicoDef } from '../../core/segmentos-academicos';
@@ -15,9 +17,9 @@ type TabEstado = 'pendientes' | 'en_correccion' | 'aprobados' | 'sinodales' | 't
   templateUrl: './departamento-academico.component.html',
   styleUrl: './departamento-academico.component.css',
 })
-export class DepartamentoAcademicoComponent implements OnInit {
+export class DepartamentoAcademicoComponent implements OnInit, OnDestroy {
   tabActivo: TabEstado = 'pendientes';
-  tituloDepartamento = 'Departamento académico';
+  tituloDepartamento = 'Coordinacion de apoyo a la titulacion';
   esModoRevision = false;
   counts: DepartamentoCounts = { pendientes: 0, en_correccion: 0, aprobados: 0, todos: 0, sinodales_por_asignar: 0 };
   lista: DepartamentoListItem[] = [];
@@ -40,16 +42,108 @@ export class DepartamentoAcademicoComponent implements OnInit {
   sinodalesGuardando = false;
   sinodalesError = '';
 
+  /** Filas simuladas mientras carga la tabla. */
+  readonly skeletonPlaceholders = [0, 1, 2, 3, 4, 5];
+
+  /** Fila seleccionada (vista dividida: documento a la derecha). Solo pestañas distintas a Sinodales. */
+  seleccionado: DepartamentoListItem | null = null;
+  cargandoDocumento = false;
+  errorDocumento = '';
+  documentoUrl: string | null = null;
+  documentoUrlSeguro: SafeResourceUrl | null = null;
+  documentoHrefSeguro: SafeUrl | null = null;
+  documentoContentType = '';
+  documentoFileName = '';
+  private docSub: Subscription | null = null;
+
   constructor(
     private egresadoService: EgresadoService,
     private authService: AuthService,
     private router: Router,
+    private sanitizer: DomSanitizer,
   ) {}
+
+  ngOnDestroy(): void {
+    this.revocarDocumentoUrl();
+    this.docSub?.unsubscribe();
+  }
+
+  get esDocumentoPdf(): boolean {
+    return (this.documentoContentType || '').toLowerCase().includes('pdf');
+  }
+
+  /**
+   * Vista dividida (tabla + documento):
+   * - No aplica en Sinodales.
+   * - En Coordinación/Administrador, en pestaña "En corrección" se oculta panel de documento.
+   */
+  get usarSplitConDocumento(): boolean {
+    if (this.tabActivo === 'sinodales') return false;
+    if (this.authService.isCoordinador() && this.tabActivo === 'en_correccion') return false;
+    return true;
+  }
+
+  /** Selecciona egresado y carga el PDF/documento en el panel derecho. */
+  seleccionarFila(item: DepartamentoListItem): void {
+    this.seleccionado = item;
+    this.cargarDocumentoSeleccionado();
+  }
+
+  private revocarDocumentoUrl(): void {
+    if (this.documentoUrl) {
+      URL.revokeObjectURL(this.documentoUrl);
+      this.documentoUrl = null;
+    }
+    this.documentoUrlSeguro = null;
+    this.documentoHrefSeguro = null;
+  }
+
+  private limpiarSeleccionDocumento(): void {
+    this.docSub?.unsubscribe();
+    this.docSub = null;
+    this.seleccionado = null;
+    this.revocarDocumentoUrl();
+    this.cargandoDocumento = false;
+    this.errorDocumento = '';
+    this.documentoContentType = '';
+    this.documentoFileName = '';
+  }
+
+  private cargarDocumentoSeleccionado(): void {
+    const id = this.seleccionado?.id;
+    if (!id) return;
+    this.docSub?.unsubscribe();
+    this.revocarDocumentoUrl();
+    this.cargandoDocumento = true;
+    this.errorDocumento = '';
+    this.documentoContentType = '';
+    this.documentoFileName = '';
+    this.docSub = this.egresadoService.getDocumento(id).subscribe({
+      next: ({ blob, contentType, fileName }) => {
+        this.cargandoDocumento = false;
+        this.documentoContentType = contentType || '';
+        this.documentoFileName = fileName || 'documento';
+        const url = URL.createObjectURL(blob);
+        this.documentoUrl = url;
+        this.documentoUrlSeguro = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.documentoHrefSeguro = this.sanitizer.bypassSecurityTrustUrl(url);
+      },
+      error: (err: { error?: { error?: string }; message?: string; statusText?: string }) => {
+        this.cargandoDocumento = false;
+        const msg = err?.error?.error ?? err?.message ?? err?.statusText;
+        this.errorDocumento = msg ? `No se pudo cargar el documento: ${msg}` : 'No se pudo cargar el documento.';
+      },
+    });
+  }
 
   /** Abre Revisión de documento (solo para modalidades que no son Residencia Profesional). */
   irARevision(item: DepartamentoListItem): void {
     if (item.modalidad === 'Residencia Profesional') return;
-    this.router.navigate(['/departamento-academico/revision', item.id]);
+    if (this.authService.isAcademico()) {
+      this.router.navigate(['/departamento-academico/revision', item.id]);
+    } else {
+      this.router.navigate(['/home/revisiones/revision', item.id]);
+    }
   }
 
   /** Lista a mostrar: en "Todos" filtrada por número de control si hay búsqueda. */
@@ -82,7 +176,9 @@ export class DepartamentoAcademicoComponent implements OnInit {
     const usuario = this.authService.getUsuario();
     const segmento = obtenerSegmentoAcademicoDef(usuario?.segmento_academico ?? '');
     this.esModoRevision = !segmento && !(usuario?.carreras_asignadas?.length ?? 0);
-    this.tituloDepartamento = this.esModoRevision ? 'Departamento académico' : (segmento?.nombre ?? 'Departamento académico');
+    this.tituloDepartamento = this.esModoRevision
+      ? 'Coordinacion de apoyo a la titulacion'
+      : (segmento?.nombre ?? 'Coordinacion de apoyo a la titulacion');
     this.cargarCounts();
     this.cargarLista();
   }
@@ -109,6 +205,11 @@ export class DepartamentoAcademicoComponent implements OnInit {
       next: (items) => {
         this.lista = items;
         this.cargando = false;
+        if (this.seleccionado) {
+          const u = items.find((x) => x.id === this.seleccionado!.id);
+          if (u) this.seleccionado = u;
+          else this.limpiarSeleccionDocumento();
+        }
       },
       error: () => {
         this.error = 'No se pudo cargar la lista.';
@@ -121,7 +222,12 @@ export class DepartamentoAcademicoComponent implements OnInit {
     if (this.esModoRevision && tab === 'sinodales') return;
     this.tabActivo = tab;
     this.filtroNumeroControl = '';
+    this.limpiarSeleccionDocumento();
     this.cargarLista();
+  }
+
+  volverInicio(): void {
+    this.router.navigate(['/home']);
   }
 
   /** Liberar (marca recibido registro y liberación). Solo Residencia Profesional; el registro pasa a Aprobados. */

@@ -8,18 +8,6 @@
 
 <div class="sit-contenido">
   <aside class="sit-panel-izq">
-    <div class="sit-tabs-lista">
-      <button type="button" class="sit-tab-lista" [class.activo]="tabLista === 'egresados'" (click)="cambiarTabLista('egresados')">Egresados</button>
-      <button
-        *ngIf="esAdminUsuariosStaff"
-        type="button"
-        class="sit-tab-lista"
-        [class.activo]="tabLista === 'usuarios'"
-        (click)="cambiarTabLista('usuarios')"
-      >
-        Usuarios
-      </button>
-    </div>
     <label for="buscar" class="sit-buscar-label">Buscar (número de control):</label>
     <div class="sit-buscar-row">
       <input
@@ -59,6 +47,21 @@
         <button type="button" class="sit-btn-limpiar" (click)="fechaDesde = ''; fechaHasta = ''; onBuscar()">Limpiar</button>
       </div>
     </div>
+    <div class="sit-vista-selector" *ngIf="esAdminUsuariosStaff; else soloEgresadosVista">
+      <label for="sit-vista-select" class="sit-vista-label">Vista</label>
+      <select
+        id="sit-vista-select"
+        class="sit-vista-select"
+        [ngModel]="tabLista"
+        (ngModelChange)="onCambioVista($event)"
+      >
+        <option value="egresados">Egresados</option>
+        <option value="usuarios">Usuarios</option>
+      </select>
+    </div>
+    <ng-template #soloEgresadosVista>
+      <div class="sit-vista-chip">Vista: Egresados</div>
+    </ng-template>
     <div class="sit-lista-cards">
       <p *ngIf="cargandoLista" class="sit-lista-sin-resultados">Cargando lista...</p>
       <p *ngIf="errorLista" class="sit-lista-error">{{ errorLista }}</p>

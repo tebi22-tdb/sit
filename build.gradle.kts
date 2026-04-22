@@ -7,7 +7,7 @@ plugins {
 
 group = "com.sit-titulacion"
 version = "0.0.1-SNAPSHOT"
-description = "SIT - Sistema Integral de Titulación"
+description = "SITVO - Sistema Integral de Titulación"
 
 java {
 	toolchain {
