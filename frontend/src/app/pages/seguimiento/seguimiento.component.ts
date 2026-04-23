@@ -90,7 +90,7 @@ export class SeguimientoComponent implements OnInit {
     const c9 = !!d.fecha_confirmacion_sinodales_recibidos;
     const c10 = !!d.fecha_agenda_acto_9_3;
     const c11 = !!d.fecha_creacion_anexo_9_3;
-    const c12 = c11;
+    const c12 = esRes ? !!d.fecha_confirmacion_entrega_anexo_9_3 : c11;
 
     const raw: Omit<PasoAlumnoVista, 'activo'>[] = [
       {
@@ -177,7 +177,7 @@ export class SeguimientoComponent implements OnInit {
         numero: 12,
         titulo: 'Proceso de titulación finalizado',
         detalle: '¡Felicidades! Tu proceso en esta etapa quedó concluido en el sistema.',
-        fecha: fh(d.fecha_creacion_anexo_9_3),
+        fecha: fh(esRes ? (d.fecha_confirmacion_entrega_anexo_9_3 ?? d.fecha_creacion_anexo_9_3) : d.fecha_creacion_anexo_9_3),
         completado: c12,
       },
     ];

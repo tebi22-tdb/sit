@@ -23,6 +23,7 @@ export interface EgresadoItem {
   fecha_enviado_departamento_academico?: string;
   fecha_actualizacion?: string;
   fecha_creacion_anexo_9_3?: string;
+  fecha_confirmacion_entrega_anexo_9_3?: string;
 }
 
 // Archivo adjunto guardado (para mostrar en edición)
@@ -58,6 +59,8 @@ export interface EgresadoDetail {
   fecha_confirmacion_sinodales_recibidos?: string;
   fecha_agenda_acto_9_3?: string;
   fecha_creacion_anexo_9_3?: string;
+  /** Confirmación de entrega del 9.3 a sinodales y sustentante (flujo residencia / DEP). */
+  fecha_confirmacion_entrega_anexo_9_3?: string;
 }
 
 // Datos personales dentro del detalle
@@ -309,6 +312,10 @@ export class EgresadoService {
 
   descargarAnexo93(id: string): Observable<Blob> {
     return this.http.get(`${API}/${id}/anexo-9-3`, { responseType: 'blob' });
+  }
+
+  confirmarEntregaAnexo93(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-entrega-anexo-9-3`, {});
   }
 
   actualizar(id: string, datos: EgresadoForm, archivo: File | null): Observable<unknown> {

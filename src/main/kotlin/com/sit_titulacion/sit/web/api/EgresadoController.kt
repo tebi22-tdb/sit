@@ -70,6 +70,7 @@ class EgresadoController(
         @RequestParam(required = false) fecha_desde: String?,
         @RequestParam(required = false) fecha_hasta: String?,
         @RequestParam(required = false) tipo_filtro: String?,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<List<EgresadoListItemDto>> {
         val desde = parseFechaParam(fecha_desde)
         val hasta = parseFechaParam(fecha_hasta, endOfDay = true)
@@ -78,7 +79,13 @@ class EgresadoController(
             "constancia" -> "constancia"
             else -> null
         }
-        val lista = egresadoService.listarParaLista(numero_control, desde, hasta, tipo)
+        val scopeUsername =
+            if (principal != null && puedeVerBandejaDepartamento(principal.getRol())) {
+                principal.username
+            } else {
+                null
+            }
+        val lista = egresadoService.listarParaLista(numero_control, desde, hasta, tipo, scopeUsername)
         return ResponseEntity.ok(lista)
     }
 
@@ -633,6 +640,22 @@ class EgresadoController(
             .contentType(MediaType.APPLICATION_PDF)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$fileName\"")
             .body(bytes)
+    }
+
+    @PostMapping("/{id}/confirmar-entrega-anexo-9-3")
+    fun confirmarEntregaAnexo93(
+        @PathVariable id: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        return if (egresadoService.confirmarEntregaAnexo93(id)) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                mapOf("error" to "No se pudo confirmar: primero debe generarse el anexo 9.3 o ya estaba confirmada la entrega."),
+            )
+        }
     }
 
     /**

@@ -91,7 +91,13 @@
       </div>
 
       <aside class="seg-proceso">
-        <h3>Proceso de Titulación</h3>
+        <div class="seg-proceso-cabecera">
+          <h3 class="seg-proceso-titulo-seccion">Proceso de titulación</h3>
+          <p class="seg-proceso-subcabecera" *ngIf="detalleSeleccionado">
+            {{ detalleSeleccionado.datos_personales.nombre }} {{ detalleSeleccionado.datos_personales.apellido_paterno }}
+            {{ detalleSeleccionado.datos_personales.apellido_materno }} · {{ detalleSeleccionado.numero_control }}
+          </p>
+        </div>
         <p *ngIf="mensajeProceso" class="seg-msg">{{ mensajeProceso }}</p>
         <p *ngIf="cargandoDetalle" class="seg-msg">Cargando detalle del egresado...</p>
         <p *ngIf="!cargandoDetalle && !detalleSeleccionado" class="seg-msg">Selecciona un egresado en la tabla para ver su proceso.</p>
@@ -101,26 +107,33 @@
             *ngFor="let paso of pasosProcesoTitulacionCache; trackBy: trackByPasoNumero"
             [class.seg-proceso-item-curso]="paso.estado === 'en_curso'"
             [class.seg-proceso-item-ok]="paso.estado === 'completado'"
+            [attr.aria-current]="paso.estado === 'en_curso' ? 'step' : null"
           >
             <div class="seg-proceso-top">
-              <span class="seg-proceso-num">{{ paso.numero }}</span>
-              <strong>{{ paso.titulo }}</strong>
-              <span class="seg-proceso-chip" [class.seg-proceso-chip-ok]="paso.estado === 'completado'" [class.seg-proceso-chip-curso]="paso.estado === 'en_curso'" [class.seg-proceso-chip-pendiente]="paso.estado === 'pendiente'">
+              <span class="seg-proceso-num" aria-hidden="true">{{ paso.numero }}</span>
+              <span class="seg-proceso-titulo-paso">{{ paso.titulo }}</span>
+              <span
+                class="seg-proceso-chip"
+                [class.seg-proceso-chip-ok]="paso.estado === 'completado'"
+                [class.seg-proceso-chip-curso]="paso.estado === 'en_curso'"
+                [class.seg-proceso-chip-pendiente]="paso.estado === 'pendiente'"
+              >
                 {{ etiquetaEstadoPaso(paso.estado) }}
               </span>
             </div>
-            <div class="seg-proceso-fecha" *ngIf="paso.fecha">{{ formatearFechaHora(paso.fecha) }}</div>
-            <p class="seg-proceso-desc">{{ paso.descripcion }}</p>
+            <div class="seg-proceso-fecha" *ngIf="paso.fecha">
+              <span class="seg-proceso-fecha-etiq">Registro</span> {{ formatearFechaHora(paso.fecha) }}
+            </div>
             <div class="seg-proceso-acciones" *ngIf="detalleSeleccionado">
-              <button *ngIf="paso.numero === 1 && !detalleSeleccionado.fecha_enviado_departamento_academico" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="enviarDepartamento()">{{ esResidenciaProfesionalSeguimiento ? 'Enviar' : 'Enviar a revisión' }}</button>
-              <button *ngIf="paso.numero === 2 && detalleSeleccionado.fecha_recibido_registro_liberacion && !detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibidosAnexos()">Confirmar</button>
-              <button *ngIf="paso.numero === 3 && detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii && !detalleSeleccionado.fecha_creacion_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar91()">Crear 9.1</button>
-              <button *ngIf="paso.numero === 4 && detalleSeleccionado.fecha_creacion_anexo_9_1 && !detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarEntrega91()">Confirmar entrega</button>
-              <button *ngIf="paso.numero === 5 && detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1 && !detalleSeleccionado.fecha_solicitud_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="solicitarConstancia92AlEgresado()">Solicitar</button>
-              <button *ngIf="paso.numero === 6 && detalleSeleccionado.fecha_solicitud_anexo_9_2 && !detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibido92()">Confirmar</button>
-              <button *ngIf="paso.numero === 7 && detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2 && !detalleSeleccionado.fecha_solicitud_sinodales" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="solicitarSinodales()">Solicitar</button>
-              <button *ngIf="paso.numero === 8 && detalleSeleccionado.fecha_asignacion_sinodales && !detalleSeleccionado.fecha_confirmacion_sinodales_recibidos" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarSinodalesRecibidos()">Confirmar</button>
-              <div *ngIf="paso.numero === 9 && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-wrap">
+              <button *ngIf="paso.key === 'fecha_enviado_departamento_academico' && !detalleSeleccionado.fecha_enviado_departamento_academico" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="enviarDepartamento()">{{ esResidenciaProfesionalSeguimiento ? 'Enviar' : 'Enviar a revisión' }}</button>
+              <button *ngIf="paso.key === 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii' && detalleSeleccionado.fecha_recibido_registro_liberacion && !detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibidosAnexos()">Confirmar</button>
+              <button *ngIf="paso.key === 'fecha_creacion_anexo_9_1' && detalleSeleccionado.fecha_confirmacion_recibidos_anexo_xxxi_xxxii && !detalleSeleccionado.fecha_creacion_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar91()">Crear 9.1</button>
+              <button *ngIf="paso.key === 'fecha_confirmacion_entrega_anexo_9_1' && detalleSeleccionado.fecha_creacion_anexo_9_1 && !detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarEntrega91()">Confirmar entrega</button>
+              <button *ngIf="paso.key === 'fecha_solicitud_anexo_9_2' && detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_1 && !detalleSeleccionado.fecha_solicitud_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="solicitarConstancia92AlEgresado()">Solicitar</button>
+              <button *ngIf="paso.key === 'fecha_confirmacion_recibido_anexo_9_2' && detalleSeleccionado.fecha_solicitud_anexo_9_2 && !detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarRecibido92()">Confirmar</button>
+              <button *ngIf="paso.key === 'fecha_solicitud_sinodales' && detalleSeleccionado.fecha_confirmacion_recibido_anexo_9_2 && !detalleSeleccionado.fecha_solicitud_sinodales" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="solicitarSinodales()">Solicitar</button>
+              <button *ngIf="paso.key === 'fecha_confirmacion_sinodales_recibidos' && detalleSeleccionado.fecha_asignacion_sinodales && !detalleSeleccionado.fecha_confirmacion_sinodales_recibidos" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="confirmarSinodalesRecibidos()">Confirmar</button>
+              <div *ngIf="paso.key === 'fecha_agenda_acto_9_3' && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-wrap">
                 <input
                   #fechaActo93Input
                   type="text"
@@ -133,10 +146,16 @@
                 />
                 <button type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="agendarActo93(fechaActo93)">Agendar</button>
               </div>
-              <p *ngIf="paso.numero === 9 && detalleSeleccionado.fecha_confirmacion_sinodales_recibidos && !detalleSeleccionado.fecha_agenda_acto_9_3" class="seg-agenda-ayuda">
-                Los días en amarillo ya tienen acto protocolario agendado (mismo día). Lunes a viernes, 10:00–14:00.
-              </p>
-              <button *ngIf="paso.numero === 10 && detalleSeleccionado.fecha_agenda_acto_9_3 && !detalleSeleccionado.fecha_creacion_anexo_9_3" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar93()">Crear 9.3</button>
+              <button *ngIf="paso.key === 'fecha_creacion_anexo_9_3' && detalleSeleccionado.fecha_agenda_acto_9_3 && !detalleSeleccionado.fecha_creacion_anexo_9_3" type="button" class="seg-btn" [disabled]="procesandoPaso" (click)="crearDescargar93()">Crear 9.3</button>
+              <button
+                *ngIf="paso.key === 'fecha_confirmacion_entrega_anexo_9_3' && esResidenciaProfesionalSeguimiento && detalleSeleccionado.fecha_creacion_anexo_9_3 && !detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_3"
+                type="button"
+                class="seg-btn"
+                [disabled]="procesandoPaso"
+                (click)="confirmarEntrega93()"
+              >
+                Confirmar
+              </button>
             </div>
           </div>
         </div>

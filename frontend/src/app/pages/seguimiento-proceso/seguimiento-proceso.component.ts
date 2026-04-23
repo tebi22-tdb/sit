@@ -51,8 +51,16 @@ interface SeguimientoItem {
 }
 
 type EstadoPaso = 'completado' | 'en_curso' | 'pendiente';
+
+interface PasoTitulacionDef {
+  key: string;
+  titulo: string;
+  descripcion: string;
+}
+
 interface PasoProcesoUi {
   numero: number;
+  key: string;
   titulo: string;
   descripcion: string;
   fecha?: string;
@@ -247,30 +255,121 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       return;
     }
     const esRes = this.esResidenciaProfesionalSeguimiento;
-    const steps = [
+    const pasosResidencia: PasoTitulacionDef[] = [
       {
         key: 'fecha_enviado_departamento_academico',
-        titulo: 'Enviar a Anexos XXXI y XXXII revisión académica',
-        descripcion: esRes
-          ? 'Se registra el envío al departamento académico para revisión inicial.'
-          : 'El expediente se envía al departamento académico para revisión.',
+        titulo:
+          'Envío del DEP de solicitud para registro y liberación de proyecto de titulación integral por residencia al departamento académico',
+        descripcion: 'La DEP registra el envío de la solicitud al departamento académico.',
       },
       {
         key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
-        titulo: 'Recibidos revisión académica de Anexos XXXI y XXXII',
-        descripcion: esRes
-          ? 'Se confirma recepción del dictamen de revisión académica (aprobado).'
-          : 'División confirma la recepción del dictamen de revisión académica (aprobado).',
+        titulo:
+          'Recibimos anexo XXXII y XXXIII (registro y liberación) del proyecto de titulación integral por parte del departamento académico',
+        descripcion: 'La DEP confirma la recepción de los documentos del departamento académico.',
       },
-      { key: 'fecha_creacion_anexo_9_1', titulo: 'Crear anexo 9.1', descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulacion.' },
-      { key: 'fecha_confirmacion_entrega_anexo_9_1', titulo: 'Entrega de anexo 9.1', descripcion: 'El egresado confirma entrega del anexo 9.1.' },
-      { key: 'fecha_solicitud_anexo_9_2', titulo: 'Solicitar anexo 9.2 al egresado', descripcion: 'División registra la solicitud de entrega de la constancia 9.2.' },
-      { key: 'fecha_confirmacion_recibido_anexo_9_2', titulo: 'Recibido anexo 9.2', descripcion: 'Se confirma la recepcion de la constancia 9.2 (división o egresado).' },
-      { key: 'fecha_solicitud_sinodales', titulo: 'Solicitud de sinodales', descripcion: 'Se solicita la asignacion del tribunal de sinodales.' },
-      { key: 'fecha_confirmacion_sinodales_recibidos', titulo: 'Recibimos sinodales', descripcion: 'Se confirma que el egresado recibio la asignacion de sinodales.' },
-      { key: 'fecha_agenda_acto_9_3', titulo: 'Agendar acto 9.3', descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.' },
-      { key: 'fecha_creacion_anexo_9_3', titulo: 'Crear anexo 9.3', descripcion: 'Se genera el anexo 9.3 despues del agendamiento.' },
-    ] as const;
+      {
+        key: 'fecha_creacion_anexo_9_1',
+        titulo: 'Generar anexo 9.1 (formato de solicitud del acto de recepción profesional)',
+        descripcion: 'Se genera el documento correspondiente en el sistema.',
+      },
+      {
+        key: 'fecha_confirmacion_entrega_anexo_9_1',
+        titulo: 'Entrega de anexo 9.1 al sustentante',
+        descripcion: 'Se confirma la entrega del anexo al sustentante.',
+      },
+      {
+        key: 'fecha_solicitud_anexo_9_2',
+        titulo:
+          'Solicitar anexo 9.2 al sustentante (constancia de no inconveniencia para su acto de recepción profesional)',
+        descripcion: 'La DEP solicita al sustentante la constancia 9.2.',
+      },
+      {
+        key: 'fecha_confirmacion_recibido_anexo_9_2',
+        titulo: 'Recibe la DEP el anexo 9.2',
+        descripcion: 'La DEP registra la recepción de la constancia 9.2.',
+      },
+      {
+        key: 'fecha_solicitud_sinodales',
+        titulo: 'Solicita sinodales la DEP al departamento académico',
+        descripcion: 'La DEP envía la solicitud de asignación de sinodales.',
+      },
+      {
+        key: 'fecha_confirmacion_sinodales_recibidos',
+        titulo: 'Entrega oficio de asignación de sinodales el departamento académico a DEP',
+        descripcion:
+          'El departamento académico registra la asignación; la DEP confirma con «Confirmar» la recepción del oficio.',
+      },
+      {
+        key: 'fecha_agenda_acto_9_3',
+        titulo: 'La DEP agenda fecha y horario para la realización del acto protocolario del sustentante',
+        descripcion: 'Se agenda día y hora del acto dentro de la ventana permitida (lunes a viernes, 10:00–14:00).',
+      },
+      {
+        key: 'fecha_creacion_anexo_9_3',
+        titulo:
+          'La DEP genera el anexo 9.3 (aviso de realización de acto protocolario de titulación integral)',
+        descripcion: 'Se genera el PDF del anexo 9.3 después del agendamiento.',
+      },
+      {
+        key: 'fecha_confirmacion_entrega_anexo_9_3',
+        titulo: 'Entrega de anexo 9.3 a sinodales y sustentante',
+        descripcion: 'La DEP confirma la entrega del aviso al jurado y al sustentante.',
+      },
+    ];
+    const pasosOtrasModalidades: PasoTitulacionDef[] = [
+      {
+        key: 'fecha_enviado_departamento_academico',
+        titulo: 'Enviar a anexos XXXI y XXXII revisión académica',
+        descripcion: 'El expediente se envía al departamento académico para revisión.',
+      },
+      {
+        key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
+        titulo: 'Recibidos revisión académica de anexos XXXI y XXXII',
+        descripcion: 'División confirma la recepción del dictamen de revisión académica (aprobado).',
+      },
+      {
+        key: 'fecha_creacion_anexo_9_1',
+        titulo: 'Crear anexo 9.1',
+        descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulación.',
+      },
+      {
+        key: 'fecha_confirmacion_entrega_anexo_9_1',
+        titulo: 'Entrega de anexo 9.1',
+        descripcion: 'El egresado confirma entrega del anexo 9.1.',
+      },
+      {
+        key: 'fecha_solicitud_anexo_9_2',
+        titulo: 'Solicitar anexo 9.2 al egresado',
+        descripcion: 'División registra la solicitud de entrega de la constancia 9.2.',
+      },
+      {
+        key: 'fecha_confirmacion_recibido_anexo_9_2',
+        titulo: 'Recibido anexo 9.2',
+        descripcion: 'Se confirma la recepción de la constancia 9.2 (división o egresado).',
+      },
+      {
+        key: 'fecha_solicitud_sinodales',
+        titulo: 'Solicitud de sinodales',
+        descripcion: 'Se solicita la asignación del tribunal de sinodales.',
+      },
+      {
+        key: 'fecha_confirmacion_sinodales_recibidos',
+        titulo: 'Recibimos sinodales',
+        descripcion: 'Se confirma que el egresado recibió la asignación de sinodales.',
+      },
+      {
+        key: 'fecha_agenda_acto_9_3',
+        titulo: 'Agendar acto 9.3',
+        descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.',
+      },
+      {
+        key: 'fecha_creacion_anexo_9_3',
+        titulo: 'Crear anexo 9.3',
+        descripcion: 'Se genera el anexo 9.3 después del agendamiento.',
+      },
+    ];
+    const steps = esRes ? pasosResidencia : pasosOtrasModalidades;
     const d = this.detalleSeleccionado;
     let todosPreviosCompletados = true;
     this.pasosProcesoTitulacionCache = steps.map((s, i) => {
@@ -278,13 +377,20 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       const completado = !!fecha;
       const estado: EstadoPaso = completado ? 'completado' : (todosPreviosCompletados ? 'en_curso' : 'pendiente');
       if (!completado) todosPreviosCompletados = false;
-      return { numero: i + 1, titulo: s.titulo, descripcion: s.descripcion, fecha, estado };
+      return {
+        numero: i + 1,
+        key: s.key,
+        titulo: s.titulo,
+        descripcion: s.descripcion,
+        fecha,
+        estado,
+      };
     });
   }
 
   etiquetaEstadoPaso(estado: EstadoPaso): string {
     if (estado === 'completado') return 'Completado';
-    if (estado === 'en_curso') return 'En curso';
+    if (estado === 'en_curso') return 'Paso actual';
     return 'Pendiente';
   }
 
@@ -561,6 +667,27 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     });
   }
 
+  confirmarEntrega93(): void {
+    if (!this.detalleSeleccionado || this.procesandoPaso) return;
+    if (!this.detalleSeleccionado.fecha_creacion_anexo_9_3) {
+      this.mensajeProceso = 'Primero debe generarse el anexo 9.3.';
+      return;
+    }
+    this.procesandoPaso = true;
+    this.mensajeProceso = '';
+    this.egresadoService.confirmarEntregaAnexo93(this.detalleSeleccionado.id).subscribe({
+      next: () => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = 'Entrega del anexo 9.3 confirmada.';
+        this.refrescarDetalle();
+      },
+      error: (err) => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar la entrega del 9.3.';
+      },
+    });
+  }
+
   private cargar(): void {
     this.cargando = true;
     this.error = '';
@@ -584,7 +711,11 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     const isoUltimo = e.fecha_actualizacion;
     const ultimoMovimiento = isoUltimo ? this.formatoFecha(new Date(isoUltimo)) : '—';
 
-    if (e.fecha_creacion_anexo_9_3) {
+    const esRes = modalidad.trim().toLowerCase() === 'residencia profesional';
+    const tituloListo =
+      esRes && e.fecha_creacion_anexo_9_3 && e.fecha_confirmacion_entrega_anexo_9_3;
+    const tituloListoOtras = !esRes && e.fecha_creacion_anexo_9_3;
+    if (tituloListo || tituloListoOtras) {
       return {
         id: e.id,
         alumno: e.nombre || '—',

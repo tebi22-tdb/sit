@@ -214,13 +214,31 @@ class EgresadoService(
         }
 
     /** Lista para el panel izquierdo: recientes primero, opcional filtro por número de control. */
-    fun listarParaLista(numeroControlFilter: String?): List<EgresadoListItemDto> {
-        val lista = if (numeroControlFilter.isNullOrBlank()) {
+    fun listarParaLista(numeroControlFilter: String?): List<EgresadoListItemDto> =
+        listarParaLista(numeroControlFilter, null)
+
+    /**
+     * Lista para panel izquierdo aplicando, opcionalmente, el mismo alcance de la bandeja de departamento.
+     * Si `scopeUsername` llega, se filtra por carreras del académico y exclusión de Residencia cuando aplique.
+     */
+    fun listarParaLista(numeroControlFilter: String?, scopeUsername: String?): List<EgresadoListItemDto> {
+        val base = if (numeroControlFilter.isNullOrBlank()) {
             egresadoRepository.findAll().sortedByDescending { it.id }
         } else {
             egresadoRepository.findByNumeroControlContaining(numeroControlFilter.trim())
                 .sortedByDescending { it.id }
         }
+        val lista =
+            if (scopeUsername.isNullOrBlank()) {
+                base
+            } else {
+                val porCarrera = filtrarEgresadosPorCarreraSiAcademico(base, scopeUsername)
+                if (bandejaDepartamentoExcluyeResidencia(scopeUsername)) {
+                    porCarrera.filter { !esResidenciaProfesional(it) }
+                } else {
+                    porCarrera
+                }
+            }
         log.info("listarParaLista: encontrados {} egresados en DB", lista.size)
         val formatter = DateTimeFormatter.ISO_INSTANT
         return lista.map { e ->
@@ -240,6 +258,7 @@ class EgresadoService(
                 fecha_enviado_departamento_academico = e.fechaEnviadoDepartamentoAcademico?.let { formatter.format(it) },
                 fecha_actualizacion = formatter.format(e.fecha_actualizacion),
                 fecha_creacion_anexo_9_3 = e.fechaCreacionAnexo93?.let { formatter.format(it) },
+                fecha_confirmacion_entrega_anexo_9_3 = e.fechaConfirmacionEntregaAnexo93?.let { formatter.format(it) },
             )
         }
     }
@@ -252,7 +271,8 @@ class EgresadoService(
         @Suppress("UNUSED_PARAMETER") fechaDesde: Instant?,
         @Suppress("UNUSED_PARAMETER") fechaHasta: Instant?,
         @Suppress("UNUSED_PARAMETER") tipoFiltro: String?,
-    ): List<EgresadoListItemDto> = listarParaLista(numeroControlFilter)
+        scopeUsername: String? = null,
+    ): List<EgresadoListItemDto> = listarParaLista(numeroControlFilter, scopeUsername)
 
     fun contarParaDepartamento(academicoUsername: String): Map<String, Int> {
         val allBase = filtrarEgresadosPorCarreraSiAcademico(egresadoRepository.findAll(), academicoUsername)
@@ -378,14 +398,22 @@ class EgresadoService(
     }
 
     /**
-     * Coordinación de apoyo a la titulación (y académico general sin carreras): solo modalidades distintas
-     * a Residencia Profesional. Los académicos por departamento/segmento siguen viendo todas las modalidades de sus carreras.
+     * Vista global “Coordinación de apoyo a la titulación” (misma idea que el front `esModoRevision`):
+     * sin segmento académico ni carreras asignadas — aquí **no** deben listarse expedientes de Residencia Profesional
+     * (Liberar / registro-liberación siguen en otros flujos, p. ej. seguimiento).
+     *
+     * Los académicos con segmento o con carreras asignadas, y cualquier otro alcance distinto, siguen viendo
+     * todas las modalidades que correspondan a su filtro.
      */
     private fun bandejaDepartamentoExcluyeResidencia(username: String): Boolean {
         if (esAcademicoSoloRevisiones(username)) return true
         val u = usuarioRepository.findByUsername(username.trim()) ?: return false
-        val r = u.rol.trim().lowercase().replace(' ', '_')
-        return r == "coordinador" || r == "apoyo_titulacion" || r == "division_estudios_prof_admin"
+        if (!u.segmentoAcademico.isNullOrBlank()) return false
+        if (u.carrerasAsignadas.isNotEmpty()) return false
+        val rol = u.rol.trim().lowercase().replace(' ', '_')
+        return rol == "coordinador" ||
+            rol == "apoyo_titulacion" ||
+            rol == "division_estudios_prof_admin"
     }
 
     private fun carreraPermitidaParaAcademico(carrera: String, permitidas: Set<String>): Boolean {
@@ -647,7 +675,7 @@ class EgresadoService(
         val anioActo = zActo.year.toString()
         val horaActo = String.format(Locale.ROOT, "%02d:%02d", zActo.hour, zActo.minute)
         val jefeDivisionNombre =
-            env.getProperty("sit.anexo93.jefe-division-nombre", "HIBER YAIR AMBROCIO LÓPEZ").trim()
+            env.getProperty("sit.anexo93.jefe-division-nombre", "MANUEL FABIAN ROJAS").trim()
         val valores =
             construirValoresPlantillaHtml(
                 e,
@@ -667,6 +695,15 @@ class EgresadoService(
                 ),
             )
         return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-3.html", valores)
+    }
+
+    /** Marca entrega del anexo 9.3 a sinodales y sustentante (solo tras generar el PDF). */
+    fun confirmarEntregaAnexo93(id: String): Boolean {
+        val e = cargarEgresadoPorId(id) ?: return false
+        if (e.fechaCreacionAnexo93 == null || e.fechaConfirmacionEntregaAnexo93 != null) return false
+        val ahora = Instant.now()
+        egresadoRepository.save(e.copy(fechaConfirmacionEntregaAnexo93 = ahora, fecha_actualizacion = ahora))
+        return true
     }
 
     fun agendarActo93(id: String, fechaHoraRaw: String): Boolean {
@@ -765,6 +802,7 @@ class EgresadoService(
             fecha_confirmacion_sinodales_recibidos = e.fechaConfirmacionSinodalesRecibidos?.let { formatter.format(it) },
             fecha_agenda_acto_9_3 = e.fechaAgendaActo93?.let { formatter.format(it) },
             fecha_creacion_anexo_9_3 = e.fechaCreacionAnexo93?.let { formatter.format(it) },
+            fecha_confirmacion_entrega_anexo_9_3 = e.fechaConfirmacionEntregaAnexo93?.let { formatter.format(it) },
         )
     }
 

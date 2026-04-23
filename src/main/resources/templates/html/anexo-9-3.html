@@ -4,90 +4,226 @@
 <meta charset="UTF-8"/>
 <title>Anexo 9.3</title>
 <style type="text/css">
-@page { size: A4; margin: 22mm 20mm 18mm 20mm; }
+@page { size: A4; margin: 25mm 22mm 20mm 22mm; }
 * { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+.doc-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 248mm;
+}
 body {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 10.5pt;
+  font-size: 11pt;
   color: #000;
-  margin: 0;
-  line-height: 1.35;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
-table.hdr { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt; }
-table.hdr td { border: 1px solid #000; padding: 5px 7px; vertical-align: middle; font-weight: bold; }
+/* —— Encabezado (misma lógica que 9.1) —— */
+table.hdr {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 22px;
+  font-size: 9pt;
+  table-layout: fixed;
+}
+table.hdr td {
+  border: 1px solid #000;
+  padding: 7px 9px;
+  vertical-align: middle;
+}
 table.hdr .logo {
   width: 19%;
   text-align: center;
-  padding: 6px;
+  padding: 8px 6px;
 }
-table.hdr .logo img { width: 64px; height: auto; max-height: 72px; display: block; margin: 0 auto; }
-.tit { font-weight: bold; text-align: center; font-size: 11pt; margin: 10px 0 22px; }
-.der { text-align: right; }
+table.hdr .logo img {
+  width: 78px;
+  height: auto;
+  max-height: 82px;
+  display: block;
+  margin: 0 auto;
+}
+table.hdr .meta {
+  font-weight: bold;
+  text-align: left;
+}
+table.hdr .meta-cod {
+  width: 26%;
+  font-weight: bold;
+  text-align: left;
+}
+table.hdr .meta-pag {
+  font-weight: normal;
+}
+/* —— Título y fecha —— */
+.tit {
+  font-weight: bold;
+  text-align: center;
+  font-size: 10.5pt;
+  margin: 0 0 24px;
+  line-height: 1.4;
+}
+.fecha-doc {
+  text-align: right;
+  font-size: 11pt;
+  margin: 0 0 26px;
+  line-height: 1.4;
+}
+/* —— Jurado —— */
+.sec-jurado {
+  margin: 0 0 10px;
+  font-weight: bold;
+  font-size: 11pt;
+  line-height: 1.35;
+}
+.jurado-linea {
+  margin: 0 0 4px;
+  font-weight: bold;
+  font-size: 11pt;
+  line-height: 1.38;
+}
+.presente-espaciado {
+  font-weight: bold;
+  margin: 10px 0 22px;
+  letter-spacing: 0.15em;
+  font-size: 11pt;
+  line-height: 1.35;
+}
+/* —— Cuerpo —— */
 .just { text-align: justify; }
+.para-principal {
+  margin: 0 0 26px;
+  font-size: 11pt;
+  line-height: 1.58;
+  text-align: justify;
+}
+.para-segundo {
+  margin: 0 0 22px;
+  font-size: 11pt;
+  line-height: 1.55;
+  text-align: justify;
+}
 .b { font-weight: bold; }
-.u { text-decoration: underline; }
-.sec { margin-top: 10px; }
+.u { text-decoration: underline; text-underline-offset: 2px; }
+/* —— Cierre y firma (raya corta centrada sobre el nombre, como plantilla) —— */
+.cierre {
+  margin-top: 8px;
+  text-align: center;
+}
+.atentamente {
+  font-weight: bold;
+  margin: 0 0 38px;
+  font-size: 11pt;
+  letter-spacing: 0.06em;
+}
+.firma-wrap {
+  text-align: center;
+  margin: 0 auto;
+  max-width: 100%;
+}
+.firma-linea-corta {
+  display: inline-block;
+  width: 10.5em;
+  min-width: 7em;
+  border-top: 1px solid #000;
+  margin: 0 auto 10px;
+  line-height: 0;
+  font-size: 0;
+  padding-top: 1px;
+}
+.firma-nombre {
+  margin: 0 0 5px;
+  font-weight: bold;
+  font-size: 11pt;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+.firma-cargo {
+  margin: 0 0 22px;
+  font-weight: bold;
+  font-size: 10.5pt;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+/* —— Aviso importante (cuerpo pequeño, itálica) —— */
 .aviso-bloque {
   font-size: 8.5pt;
   font-style: italic;
   text-align: justify;
-  margin-top: 20px;
-  line-height: 1.32;
+  margin: 0 0 18px;
+  line-height: 1.38;
 }
-.aviso-bloque p { margin: 0 0 6px; }
-.aviso-bloque .etiq { font-weight: bold; font-style: italic; }
-.cierre { margin-top: 22px; text-align: center; }
-.atentamente {
+.aviso-bloque p {
+  margin: 0 0 7px;
+}
+.aviso-bloque p:last-child {
+  margin-bottom: 0;
+}
+.aviso-bloque .etiq {
   font-weight: bold;
-  margin: 0 0 16px;
+  font-style: italic;
 }
-.firma-centro { margin: 0 auto; max-width: 420px; }
-.firma-linea {
-  border-top: 1px solid #000;
-  margin: 0 auto 10px;
-  width: 85%;
-  max-width: 320px;
-  padding-top: 2px;
+.relleno-pie {
+  flex: 1 1 auto;
+  min-height: 18mm;
+  width: 100%;
 }
-.firma-nombre { margin: 0 0 4px; font-weight: bold; }
-.firma-cargo { margin: 0; font-weight: bold; font-size: 10pt; }
+.pie-wrap {
+  flex-shrink: 0;
+  width: 100%;
+}
 .pie {
   width: 100%;
-  font-size: 8pt;
-  margin-top: 18px;
+  font-size: 7.5pt;
   border-collapse: collapse;
+  color: #000;
 }
-.pie td { vertical-align: top; padding: 0 4px; }
+.pie td {
+  vertical-align: bottom;
+  padding: 0 4px 0;
+  line-height: 1.35;
+}
 .pie .c { text-align: center; }
 .pie .r { text-align: right; white-space: nowrap; }
 </style>
 </head>
 <body>
+<div class="doc-shell">
+
 <table class="hdr">
   <tr>
     <td class="logo" rowspan="3"><img src="logo-itvo.png" alt="ITVO"/></td>
-    <td>Nombre del documento: Formato de Aviso de Realización del Acto de Recepción Profesional</td>
-    <td style="width:30%">Código: ITVO-AC-PR-05-04</td>
+    <td class="meta">Nombre del documento: Formato de Aviso de Realización del Acto de Recepción Profesional</td>
+    <td class="meta meta-cod">Código: ITVO-AC-PR-05-04</td>
   </tr>
   <tr>
-    <td>Referencia a la Norma ISO 9001:2015, 8.1, 8.5</td>
-    <td>Revisión: 2</td>
+    <td class="meta">Referencia a la Norma ISO 9001:2015, 8.1, 8.5</td>
+    <td class="meta">Revisión: 2</td>
   </tr>
   <tr>
-    <td>&#160;</td>
-    <td>Página 1 de 1</td>
+    <td class="meta">&#160;</td>
+    <td class="meta meta-pag">Página 1 de 1</td>
   </tr>
 </table>
+
 <p class="tit">Anexo 9.3 Formato de Aviso de Realización del Acto Protocolario de Titulación Integral</p>
-<p class="der">Fecha: {{FECHA_CARTA}}.</p>
-<p class="sec b">C. INTEGRANTES DEL JURADO</p>
-<p class="b">PRESIDENTE: {{PRESIDENTE}}</p>
-<p class="b">SECRETARIO: {{SECRETARIO}}</p>
-<p class="b">VOCAL: {{VOCAL}}</p>
-<p class="b">VOCAL SUPLENTE: {{VOCAL_SUPLENTE}}</p>
-<p class="b" style="letter-spacing:0.15em;margin-top:8px;">P R E S E N T E</p>
-<p class="just">&#160;</p>
-<p class="just">
+<p class="fecha-doc">Fecha: {{FECHA_CARTA}}.</p>
+
+<p class="sec-jurado">C. INTEGRANTES DEL JURADO</p>
+<p class="jurado-linea">PRESIDENTE: {{PRESIDENTE}}</p>
+<p class="jurado-linea">SECRETARIO: {{SECRETARIO}}</p>
+<p class="jurado-linea">VOCAL: {{VOCAL}}</p>
+<p class="jurado-linea">VOCAL SUPLENTE: {{VOCAL_SUPLENTE}}</p>
+<p class="presente-espaciado">P R E S E N T E</p>
+
+<p class="just para-principal">
   Por este medio le informo que el Acto de Recepción Profesional de
   <span class="b u">C. {{NOMBRE}}</span>, con No. de control
   <span class="b u">{{NUMERO_CONTROL}}</span>, egresado del Instituto Tecnológico del Valle de Oaxaca,
@@ -98,19 +234,21 @@ table.hdr .logo img { width: 64px; height: auto; max-height: 72px; display: bloc
   <span class="b u">{{ACTO_ANIO}}</span> a las <span class="b u">{{ACTO_HORA}}</span> horas,
   conforme a la fecha y hora registrada en el SITVO ({{ACTO_93}}).
 </p>
-<p class="just">&#160;</p>
-<p class="just">
+
+<p class="just para-segundo">
   Por lo anterior, se les solicita su puntual asistencia a este acto, por lo menos con 15 minutos de anticipación.
   <span class="b">ES IMPORTANTE QUE SE PRESENTEN CON VESTIMENTA FORMAL.</span>
 </p>
+
 <div class="cierre">
   <p class="atentamente">A T E N T A M E N T E</p>
-  <div class="firma-centro">
-    <div class="firma-linea">&#160;</div>
+  <div class="firma-wrap">
+    <div class="firma-linea-corta"></div>
     <p class="firma-nombre">{{JEFE_DIVISION_NOMBRE}}</p>
     <p class="firma-cargo">JEFE DE LA DIVISIÓN DE ESTUDIOS PROFESIONALES</p>
   </div>
 </div>
+
 <div class="aviso-bloque">
   <p><span class="etiq">AVISO IMPORTANTE:</span>
     De conformidad con los lineamientos de titulación del instituto, los integrantes del jurado deberán observar lo siguiente:</p>
@@ -119,6 +257,10 @@ table.hdr .logo img { width: 64px; height: auto; max-height: 72px; display: bloc
   <p>c) Vigilar el desarrollo del acto de recepción profesional y la aplicación de los instrumentos de evaluación correspondientes.</p>
   <p>d) Firmar el acta y las constancias que formalicen la conclusión del acto protocolario.</p>
 </div>
+
+<div class="relleno-pie"></div>
+
+<div class="pie-wrap">
 <table class="pie" role="presentation">
   <tr>
     <td style="width:22%">ITVO-AC-PR-05-04</td>
@@ -126,5 +268,8 @@ table.hdr .logo img { width: 64px; height: auto; max-height: 72px; display: bloc
     <td class="r" style="width:12%">Rev. 2</td>
   </tr>
 </table>
+</div>
+
+</div>
 </body>
 </html>

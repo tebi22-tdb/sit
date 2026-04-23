@@ -50,6 +50,8 @@ frontend/out-tsc/
 bootrun-log.txt
 *.log
 
+### Archivos locales ###
+.env
 _prisciliano_*.txt
 _esteban_pdf.txt
 _doc_extract_text.txt
