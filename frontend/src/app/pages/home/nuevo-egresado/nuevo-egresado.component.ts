@@ -24,6 +24,7 @@ export interface ActualizarEgresadoPayload {
 })
 export class NuevoEgresadoComponent implements OnChanges {
   @Input() egresadoParaEditar: EgresadoDetail | null = null;
+  @Input() guardando = false;
   @Output() cancelar = new EventEmitter<void>();
   @Output() agregar = new EventEmitter<AgregarEgresadoPayload>();
   @Output() actualizar = new EventEmitter<ActualizarEgresadoPayload>();
@@ -161,6 +162,7 @@ export class NuevoEgresadoComponent implements OnChanges {
   }
 
   onSubmit(): void {
+    if (this.guardando) return;
     this.archivoRequeridoError = false;
     if (this.form.invalid) {
       this.form.markAllAsTouched();

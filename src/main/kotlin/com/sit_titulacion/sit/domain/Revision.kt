@@ -9,6 +9,13 @@ import java.time.Instant
 
 @Document(collection = "revisiones")
 @CompoundIndex(name = "egresado_fecha", def = "{ 'egresado_id': 1, 'fecha': -1 }")
+data class RevisionDocumentoAdjunto(
+    @Field("nombre_original") val nombreOriginal: String,
+    @Field("content_type") val contentType: String,
+    @Field("tamanio_bytes") val tamanioBytes: Long,
+    @Field("contenido") val contenido: ByteArray,
+)
+
 data class Revision(
     @Id val id: ObjectId? = null,
     @Field("egresado_id") val egresadoId: ObjectId,
@@ -21,4 +28,5 @@ data class Revision(
     @Field("fecha_envio_siguiente") val fechaEnvioSiguiente: Instant? = null,
     @Field("enviado_al_egresado") val enviadoAlEgresado: Boolean = false,
     @Field("fecha_envio_egresado") val fechaEnvioEgresado: Instant? = null,
+    @Field("documento_adjunto") val documentoAdjunto: RevisionDocumentoAdjunto? = null,
 )

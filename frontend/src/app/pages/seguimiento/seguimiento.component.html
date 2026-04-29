@@ -21,6 +21,18 @@
         </p>
         <p class="seguimiento-estado-actual">{{ estadoActualAlumno }}</p>
 
+        <div
+          *ngIf="avisoPlazosNoResAlumno as plazos"
+          class="seguimiento-plazos-banner"
+          [class.seguimiento-plazos--ok]="plazos.estadoGlobal === 'en_tiempo'"
+          [class.seguimiento-plazos--mid]="plazos.estadoGlobal === 'rezagado'"
+          [class.seguimiento-plazos--bad]="plazos.estadoGlobal === 'vencido'"
+        >
+          <p class="seguimiento-plazos-titulo">Tus plazos (proyecto y titulación)</p>
+          <p class="seguimiento-plazos-line">{{ plazos.lineaProyecto }}</p>
+          <p class="seguimiento-plazos-line">{{ plazos.lineaTitulacion }}</p>
+        </div>
+
         <div class="timeline">
           <div
             class="timeline-item"
@@ -35,7 +47,59 @@
                 <span class="timeline-titulo-paso">
                   <strong>{{ paso.numero }}. {{ paso.titulo }}</strong>
                 </span>
-                <p class="timeline-detalle-alumno">{{ paso.detalle }}</p>
+                <p class="timeline-detalle-alumno">
+                  {{ paso.detalle }}
+                  <strong *ngIf="paso.fechaDetalleResaltada" class="timeline-fecha-destacada">{{
+                    paso.fechaDetalleResaltada
+                  }}</strong>
+                </p>
+                <div *ngIf="!esResidenciaProfesional && paso.numero === 3" class="timeline-revisiones-resumen">
+                  <span
+                    class="timeline-revisiones-badge"
+                    [class.timeline-revisiones-badge--ok]="etapaRevisionesCompletada || !tieneRevisionesPendientes"
+                    [class.timeline-revisiones-badge--warn]="!etapaRevisionesCompletada && tieneRevisionesPendientes"
+                  >
+                    {{ resumenRevisionesPaso }}
+                  </span>
+                  <button type="button" class="timeline-revisiones-link" (click)="togglePanelRevisiones()">
+                    {{ mostrarPanelRevisiones ? 'Ocultar revisiones' : 'Ver revisiones' }}
+                  </button>
+                </div>
+
+                <div *ngIf="paso.titulo === 'Documentación escaneada enviada' && mostrarFormularioSubidaDocEscaneada" class="timeline-doc-escaneada">
+                  <h4 class="timeline-doc-escaneada-titulo">Documentación escaneada del proceso</h4>
+                  <p class="timeline-doc-escaneada-texto">
+                    Sube en PDF la documentación escaneada de todo tu proceso correspondiente a la titulación integral. Puedes adjuntar
+                    varios archivos.
+                  </p>
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    multiple
+                    class="timeline-doc-escaneada-input"
+                    (change)="onArchivosDocEscaneadaSeleccionados($event)"
+                  />
+                  <p *ngIf="archivosPdfEscaneados.length" class="timeline-doc-escaneada-lista">
+                    {{ archivosPdfEscaneados.length }} archivo(s) seleccionado(s).
+                  </p>
+                  <p *ngIf="mensajeDocEscaneada" class="timeline-doc-escaneada-msg">{{ mensajeDocEscaneada }}</p>
+                  <button
+                    type="button"
+                    class="timeline-doc-escaneada-btn"
+                    [disabled]="enviandoDocEscaneada || !archivosPdfEscaneados.length"
+                    (click)="enviarDocumentacionEscaneadaAlumno()"
+                  >
+                    {{ enviandoDocEscaneada ? 'Enviando…' : 'Enviar' }}
+                  </button>
+                </div>
+
+                <div *ngIf="paso.titulo === 'Recepción de documentación confirmada' && mostrarEstadoDocEscaneadaEnviada" class="timeline-doc-escaneada timeline-doc-escaneada--info">
+                  <p class="timeline-doc-escaneada-texto timeline-doc-escaneada-texto--solo">
+                    Enviaste tu documentación el
+                    <strong>{{ formatearFechaHora(datos.fecha_envio_documentacion_escaneada_egresado) }}</strong>. La división de
+                    estudios confirmará la recepción en cuanto revise tus archivos.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -75,25 +139,6 @@
           </dl>
         </div>
 
-        <div class="seguimiento-card seguimiento-card-notificaciones">
-          <h3 class="seguimiento-card-titulo">Revisiones para corregir</h3>
-          <p *ngIf="cargandoRevisionesEnviadas" class="seguimiento-avance-line">Cargando revisiones…</p>
-          <ul *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length > 0" class="seguimiento-revision-lista">
-            <li *ngFor="let r of revisionesParaCorregir" class="seguimiento-revision-item">
-              <p class="seguimiento-revision-titulo">
-                Revision recibida, favor de corregir en la brevedad
-              </p>
-              <p *ngIf="r.observaciones" class="seguimiento-revision-obs">{{ r.observaciones }}</p>
-              <p class="seguimiento-revision-fecha">
-                {{ formatearFechaHora(r.fecha_envio_egresado || r.fecha) }}
-              </p>
-            </li>
-          </ul>
-          <p *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length === 0" class="seguimiento-avance-line">
-            No tienes revisiones pendientes por corregir.
-          </p>
-        </div>
-
         <div class="seguimiento-card">
           <h3 class="seguimiento-card-titulo">Avance actual</h3>
           <p class="seguimiento-avance-line">{{ estadoActualAlumno }}</p>
@@ -106,6 +151,46 @@
             >
               {{ estadoAvanceLabel }}
             </span>
+          </p>
+        </div>
+
+        <div
+          id="revisiones-apoyo"
+          *ngIf="mostrarPanelRevisiones"
+          class="seguimiento-card seguimiento-card-notificaciones"
+        >
+          <h3 class="seguimiento-card-titulo">Revisiones</h3>
+          <p *ngIf="errorDescargaRevision" class="seguimiento-error-descarga">{{ errorDescargaRevision }}</p>
+          <p *ngIf="cargandoRevisionesEnviadas" class="seguimiento-avance-line">Cargando revisiones…</p>
+          <ul *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length > 0" class="seguimiento-revision-lista">
+            <li *ngFor="let r of revisionesParaCorregir" class="seguimiento-revision-item">
+              <p class="seguimiento-revision-titulo">Revisión recibida; favor de corregir a la brevedad.</p>
+              <p *ngIf="r.observaciones" class="seguimiento-revision-obs" [class.expandida]="esRevisionExpandida(r.id)">
+                {{ r.observaciones }}
+              </p>
+              <button
+                *ngIf="observacionEsLarga(r.observaciones)"
+                type="button"
+                class="seguimiento-revision-toggle"
+                (click)="toggleRevision(r.id)"
+              >
+                {{ esRevisionExpandida(r.id) ? 'Ver menos' : 'Ver más' }}
+              </button>
+              <button
+                *ngIf="r.tiene_documento_adjunto"
+                type="button"
+                class="seguimiento-revision-toggle"
+                (click)="descargarAdjuntoRevision(r)"
+              >
+                Descargar PDF adjunto
+              </button>
+              <p class="seguimiento-revision-fecha">
+                {{ formatearFechaHora(r.fecha_envio_egresado || r.fecha) }}
+              </p>
+            </li>
+          </ul>
+          <p *ngIf="!cargandoRevisionesEnviadas && revisionesParaCorregir.length === 0" class="seguimiento-avance-line">
+            No tienes revisiones pendientes por corregir.
           </p>
         </div>
       </aside>

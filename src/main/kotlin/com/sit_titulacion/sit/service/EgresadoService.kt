@@ -6,9 +6,12 @@ import com.sit_titulacion.sit.domain.DatosPersonales
 import com.sit_titulacion.sit.domain.DatosProyecto
 import com.sit_titulacion.sit.domain.DocumentoAdjunto
 import com.sit_titulacion.sit.domain.Documentos
+import com.sit_titulacion.sit.domain.ArchivoEscaneadoMeta
+import com.sit_titulacion.sit.domain.DocumentacionEscaneada
 import com.sit_titulacion.sit.domain.Egresado
 import com.sit_titulacion.sit.domain.HistorialEstado
 import com.sit_titulacion.sit.domain.SinodalesTribunal
+import com.sit_titulacion.sit.repository.DocumentacionEscaneadaRepository
 import com.sit_titulacion.sit.repository.EgresadoRepository
 import com.sit_titulacion.sit.repository.UsuarioRepository
 import com.sit_titulacion.sit.web.api.dto.AnexoDto
@@ -63,6 +66,7 @@ data class DocumentoStream(
 @Service
 class EgresadoService(
     private val egresadoRepository: EgresadoRepository,
+    private val documentacionEscaneadaRepository: DocumentacionEscaneadaRepository,
     private val usuarioRepository: UsuarioRepository,
     private val gridFsTemplate: GridFsTemplate,
     private val env: Environment,
@@ -256,9 +260,14 @@ class EgresadoService(
                 modalidad = e.datos_proyecto.modalidad.ifBlank { "—" },
                 fecha_creacion = formatter.format(e.fechaCreacion),
                 fecha_enviado_departamento_academico = e.fechaEnviadoDepartamentoAcademico?.let { formatter.format(it) },
+                fecha_recibido_registro_liberacion = e.fechaRecibidoRegistroLiberacion?.let { formatter.format(it) },
+                fecha_confirmacion_recibidos_anexo_xxxi_xxxii = e.fechaConfirmacionRecibidosAnexoXxxiXxxii?.let { formatter.format(it) },
                 fecha_actualizacion = formatter.format(e.fecha_actualizacion),
                 fecha_creacion_anexo_9_3 = e.fechaCreacionAnexo93?.let { formatter.format(it) },
                 fecha_confirmacion_entrega_anexo_9_3 = e.fechaConfirmacionEntregaAnexo93?.let { formatter.format(it) },
+                fecha_solicitud_documentacion_escaneada = e.fechaSolicitudDocumentacionEscaneada?.let { formatter.format(it) },
+                fecha_envio_documentacion_escaneada_egresado = e.fechaEnvioDocumentacionEscaneadaEgresado?.let { formatter.format(it) },
+                fecha_confirmacion_documentacion_escaneada_recibida = e.fechaConfirmacionDocumentacionEscaneadaRecibida?.let { formatter.format(it) },
             )
         }
     }
@@ -551,6 +560,8 @@ class EgresadoService(
         }
         val destinatarioServicios =
             env.getProperty("sit.anexo91.destinatario-servicios-escolares")?.trim().orEmpty()
+        val destinatarioServiciosFinal =
+            if (destinatarioServicios.isNotEmpty()) destinatarioServicios else "ROMEO ALBERTO ANGELES PEREZ"
         val valores =
             construirValoresPlantillaHtml(
                 e,
@@ -558,8 +569,7 @@ class EgresadoService(
                     "MODALIDAD" to e.datos_proyecto.modalidad,
                     "FECHA_CARTA" to fechaCartaEspanola(ahora),
                     "TEXTO_OPCION_TI" to textoOpcionTitulacionIntegral(e.datos_proyecto.modalidad),
-                    "DESTINATARIO_SERVICIOS_ESCOLARES" to
-                        if (destinatarioServicios.isEmpty()) "\u200B" else destinatarioServicios,
+                    "DESTINATARIO_SERVICIOS_ESCOLARES" to destinatarioServiciosFinal,
                 ),
             )
         return htmlAnexoPdfService.generarDesdeClasspath("templates/html/anexo-9-1.html", valores)
@@ -706,6 +716,121 @@ class EgresadoService(
         return true
     }
 
+
+    /** Tras 9.3 (y entrega 9.3 en residencia): la DEP puede solicitar documentación escaneada al egresado. */
+    fun solicitarDocumentacionEscaneada(id: String): Boolean {
+        val e = cargarEgresadoPorId(id) ?: return false
+        if (!cumplePrerequisitoDocumentacionEscaneada(e)) return false
+        if (e.fechaSolicitudDocumentacionEscaneada != null) return false
+        if (e.fechaConfirmacionDocumentacionEscaneadaRecibida != null) return false
+        val ahora = Instant.now()
+        egresadoRepository.save(e.copy(fechaSolicitudDocumentacionEscaneada = ahora, fecha_actualizacion = ahora))
+        return true
+    }
+
+    /** La DEP confirma que recibió la documentación escaneada enviada por el egresado. */
+    fun confirmarDocumentacionEscaneadaRecibida(id: String): Boolean {
+        val e = cargarEgresadoPorId(id) ?: return false
+        if (e.fechaEnvioDocumentacionEscaneadaEgresado == null) return false
+        if (e.fechaConfirmacionDocumentacionEscaneadaRecibida != null) return false
+        val ahora = Instant.now()
+        egresadoRepository.save(e.copy(fechaConfirmacionDocumentacionEscaneadaRecibida = ahora, fecha_actualizacion = ahora))
+        return true
+    }
+
+    /**
+     * Egresado sube uno o más PDF a GridFS y se registra en [documentacion_escaneada].
+     * @return mensaje de error o null si todo salió bien.
+     */
+    fun subirDocumentacionEscaneadaEgresado(egresadoId: String, archivos: List<MultipartFile>?): String? {
+        val oid = try {
+            ObjectId(egresadoId)
+        } catch (_: Exception) {
+            return "Identificador inválido."
+        }
+        val e = egresadoRepository.findById(oid).orElse(null) ?: return "Registro no encontrado."
+        if (e.fechaSolicitudDocumentacionEscaneada == null) {
+            return "Aún no se ha solicitado la documentación escaneada."
+        }
+        if (e.fechaConfirmacionDocumentacionEscaneadaRecibida != null) {
+            return "Ya se confirmó la recepción; no se pueden enviar más archivos."
+        }
+        val lista = archivos?.filter { !it.isEmpty } ?: emptyList()
+        if (lista.isEmpty()) return "Debes adjuntar al menos un PDF."
+        for (a in lista) {
+            if (!esPdfValido(a)) {
+                return "Solo se permiten archivos PDF (${a.originalFilename ?: "archivo"})."
+            }
+        }
+        eliminarEntregaEscaneadaAnterior(oid)
+        val metas = mutableListOf<ArchivoEscaneadoMeta>()
+        for (a in lista) {
+            val gid = subirArchivo(a)
+            metas.add(
+                ArchivoEscaneadoMeta(
+                    gridfsId = gid,
+                    nombreOriginal = a.originalFilename ?: "documento.pdf",
+                    contentType = a.contentType ?: "application/pdf",
+                    tamanioBytes = a.size,
+                ),
+            )
+        }
+        val guardado = documentacionEscaneadaRepository.save(
+            DocumentacionEscaneada(
+                egresadoId = oid,
+                numeroControl = e.numero_control,
+                nombreCompleto = nombreCompleto(e),
+                carrera = e.datos_personales.carrera.takeIf { it.isNotBlank() },
+                archivos = metas,
+            ),
+        )
+        val ahora = Instant.now()
+        egresadoRepository.save(
+            e.copy(
+                fechaEnvioDocumentacionEscaneadaEgresado = ahora,
+                fecha_actualizacion = ahora,
+            ),
+        )
+        log.info(
+            "Documentación escaneada: egresadoId={}, entregaId={}, archivos={}",
+            egresadoId,
+            guardado.id,
+            metas.size,
+        )
+        return null
+    }
+
+    private fun cumplePrerequisitoDocumentacionEscaneada(e: Egresado): Boolean {
+        if (e.fechaCreacionAnexo93 == null) return false
+        if (esResidenciaProfesional(e)) {
+            return e.fechaConfirmacionEntregaAnexo93 != null
+        }
+        return true
+    }
+
+    private fun eliminarEntregaEscaneadaAnterior(egresadoId: ObjectId) {
+        val ant = documentacionEscaneadaRepository.findByEgresadoId(egresadoId) ?: return
+        for (f in ant.archivos) {
+            try {
+                gridFsTemplate.delete(Query.query(Criteria.where("_id").`is`(f.gridfsId)))
+            } catch (ex: Exception) {
+                log.warn("GridFS {} no eliminado al reemplazar documentación escaneada: {}", f.gridfsId, ex.message)
+            }
+        }
+        try {
+            val idAnt = ant.id ?: return
+            documentacionEscaneadaRepository.deleteById(idAnt)
+        } catch (ex: Exception) {
+            log.warn("No se pudo eliminar documentación escaneada anterior: {}", ex.message)
+        }
+    }
+
+    private fun esPdfValido(archivo: MultipartFile): Boolean {
+        val ct = (archivo.contentType ?: "").lowercase()
+        val name = (archivo.originalFilename ?: "").lowercase()
+        return ct.contains("pdf") || name.endsWith(".pdf")
+    }
+
     fun agendarActo93(id: String, fechaHoraRaw: String): Boolean {
         val e = cargarEgresadoPorId(id) ?: return false
         if (e.fechaConfirmacionSinodalesRecibidos == null || e.fechaAgendaActo93 != null) return false
@@ -803,6 +928,9 @@ class EgresadoService(
             fecha_agenda_acto_9_3 = e.fechaAgendaActo93?.let { formatter.format(it) },
             fecha_creacion_anexo_9_3 = e.fechaCreacionAnexo93?.let { formatter.format(it) },
             fecha_confirmacion_entrega_anexo_9_3 = e.fechaConfirmacionEntregaAnexo93?.let { formatter.format(it) },
+            fecha_solicitud_documentacion_escaneada = e.fechaSolicitudDocumentacionEscaneada?.let { formatter.format(it) },
+            fecha_envio_documentacion_escaneada_egresado = e.fechaEnvioDocumentacionEscaneadaEgresado?.let { formatter.format(it) },
+            fecha_confirmacion_documentacion_escaneada_recibida = e.fechaConfirmacionDocumentacionEscaneadaRecibida?.let { formatter.format(it) },
         )
     }
 

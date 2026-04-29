@@ -124,6 +124,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
 }
 
 .seguimiento-revision-item {
@@ -146,13 +149,45 @@
   font-size: 0.84rem;
   color: #334155;
   white-space: pre-wrap;
+  word-break: break-word;
   line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.seguimiento-revision-obs.expandida {
+  display: block;
+  -webkit-line-clamp: initial;
+  line-clamp: initial;
+  overflow: visible;
+}
+
+.seguimiento-revision-toggle {
+  margin: 0.3rem 0 0;
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
 }
 
 .seguimiento-revision-fecha {
   margin: 0.3rem 0 0;
   font-size: 0.74rem;
   color: #64748b;
+}
+
+.seguimiento-error-descarga {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  line-height: 1.35;
 }
 
 .seguimiento-card-perfil {
@@ -377,6 +412,82 @@
   background: #f7fafc;
 }
 
+/* Subida de documentación escaneada (dentro del paso 13 / aviso en paso 14) */
+.timeline-doc-escaneada {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #cbd5e0;
+}
+
+.timeline-doc-escaneada--info {
+  border-top-color: #bee3f8;
+  background: #ebf8ff;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  margin-bottom: -0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  border-radius: 0 0 8px 8px;
+}
+
+.timeline-item.activo .timeline-doc-escaneada--info {
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+.timeline-doc-escaneada-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c5282;
+}
+
+.timeline-doc-escaneada-texto {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: #4a5568;
+  line-height: 1.45;
+}
+
+.timeline-doc-escaneada-texto--solo {
+  margin: 0;
+}
+
+.timeline-doc-escaneada-input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.timeline-doc-escaneada-lista {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  color: #2d3748;
+}
+
+.timeline-doc-escaneada-msg {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: #c05621;
+}
+
+.timeline-doc-escaneada-btn {
+  padding: 0.5rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: #3182ce;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.timeline-doc-escaneada-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* Pasos completados: aspecto atenuado */
 .timeline-item.completado .timeline-fecha,
 .timeline-item.completado .timeline-texto,
@@ -518,6 +629,47 @@
   margin-top: 0.2rem;
 }
 
+.seguimiento-plazos-banner {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #c5d9f0;
+  background: #f0f7ff;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #2d3748;
+}
+
+.seguimiento-plazos--ok {
+  border-color: #9dd4b8;
+  background: #ecf9f1;
+}
+
+.seguimiento-plazos--mid {
+  border-color: #e8c49a;
+  background: #fff8f0;
+}
+
+.seguimiento-plazos--bad {
+  border-color: #e8a4a4;
+  background: #fff5f5;
+}
+
+.seguimiento-plazos-titulo {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  color: #2c5282;
+  font-size: 0.9rem;
+}
+
+.seguimiento-plazos-line {
+  margin: 0 0 0.35rem;
+}
+
+.seguimiento-plazos-line:last-child {
+  margin-bottom: 0;
+}
+
 .seguimiento-estado-actual {
   margin: 0 0 1.25rem;
   padding: 0.75rem 0.9rem;
@@ -535,6 +687,55 @@
   color: #4a5568;
   line-height: 1.45;
   font-weight: 400;
+}
+
+.timeline-fecha-destacada {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-weight: 700;
+  color: #2b6cb0;
+  letter-spacing: 0.02em;
+}
+
+.timeline-revisiones-resumen {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timeline-revisiones-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.timeline-revisiones-badge--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.timeline-revisiones-badge--warn {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.timeline-revisiones-link {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.timeline-revisiones-link:hover {
+  color: #1e40af;
 }
 
 @media (max-width: 680px) {

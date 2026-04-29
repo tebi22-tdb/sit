@@ -250,6 +250,21 @@
   line-height: 1.45;
 }
 
+.revision-detalle-adjunto {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.revision-adjunto-nombre {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
 .revision-placeholder-texto {
   margin: 0;
   color: #718096;

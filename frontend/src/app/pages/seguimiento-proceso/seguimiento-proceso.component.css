@@ -70,6 +70,35 @@
 
 .seg-vacio { text-align: center; color: #5a6b88; }
 
+.seg-plazos-banner {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #c5d9f0;
+  background: #f0f7ff;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #24344f;
+}
+.seg-plazos-banner--ok {
+  border-color: #9dd4b8;
+  background: #ecf9f1;
+}
+.seg-plazos-banner--mid {
+  border-color: #e8c49a;
+  background: #fff8f0;
+}
+.seg-plazos-banner--bad {
+  border-color: #e8a4a4;
+  background: #fff5f5;
+}
+.seg-plazos-line {
+  margin: 0 0 4px;
+}
+.seg-plazos-line:last-child {
+  margin-bottom: 0;
+}
+
 .seg-proceso {
   margin-top: 0;
   background: #fff;

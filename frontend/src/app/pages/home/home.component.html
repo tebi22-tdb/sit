@@ -105,6 +105,7 @@
     <p *ngIf="mensaje" class="sit-mensaje" [class.sit-mensaje-error]="mensaje.startsWith('Error')">{{ mensaje }}</p>
     <app-nuevo-egresado
       *ngIf="mostrarFormulario"
+      [guardando]="guardandoEgresado"
       (cancelar)="mostrarFormulario = false"
       (agregar)="onAgregar($event)"
     ></app-nuevo-egresado>
@@ -166,6 +167,7 @@
     <app-nuevo-egresado
       *ngIf="editando && detalle"
       [egresadoParaEditar]="detalle"
+      [guardando]="guardandoEgresado"
       (cancelar)="editando = false"
       (actualizar)="onActualizar($event)"
     ></app-nuevo-egresado>

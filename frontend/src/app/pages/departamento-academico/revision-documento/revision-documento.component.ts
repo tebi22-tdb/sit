@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,6 +16,7 @@ import { EgresadoService, RevisionApi } from '../../../services/egresado.service
   styleUrl: './revision-documento.component.css',
 })
 export class RevisionDocumentoComponent implements OnInit, OnDestroy {
+  @ViewChild('archivoRevisionInput') archivoRevisionInput?: ElementRef<HTMLInputElement>;
   id = '';
   cargandoDocumento = false;
   errorDocumento = '';
@@ -36,6 +37,8 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
   resultadoNueva: 'observaciones' | 'aprobado' = 'observaciones';
   mostrarPanelRevision = true;
   enviandoRevisionId: string | null = null;
+  archivoRevision: File | null = null;
+  nombreArchivoRevision = '';
 
   subiendoDocumento = false;
   mensajeSubidaArchivo = '';
@@ -136,9 +139,29 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
   /** Limpia el formulario para escribir una nueva revisión. */
   nuevaRevisionClick(): void {
     this.mostrarPanelRevision = true;
-    this.observacionesNueva = '';
+    this.limpiarFormularioRevision();
+  }
+
+  onArchivoRevision(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) {
+      this.archivoRevision = null;
+      this.nombreArchivoRevision = '';
+      return;
+    }
+    const esPdfNombre = file.name.toLowerCase().endsWith('.pdf');
+    const esPdfTipo = (file.type || '').toLowerCase() === 'application/pdf';
+    if (!esPdfNombre && !esPdfTipo) {
+      this.archivoRevision = null;
+      this.nombreArchivoRevision = '';
+      this.mensaje = 'Solo se permite adjuntar archivos PDF en la revisión.';
+      input.value = '';
+      return;
+    }
+    this.archivoRevision = file;
+    this.nombreArchivoRevision = file.name;
     this.mensaje = '';
-    this.mensajeEnvio = '';
   }
 
   togglePanelReemplazo(): void {
@@ -188,10 +211,10 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
         : { resultado: 'observaciones', observaciones: this.observacionesNueva };
 
     this.subs.add(
-      this.egresadoService.crearRevision(this.id, cuerpo).subscribe({
+      this.egresadoService.crearRevision(this.id, cuerpo, this.archivoRevision).subscribe({
         next: (creada) => {
           this.guardando = false;
-          this.observacionesNueva = '';
+          this.limpiarFormularioRevision();
           this.mensaje = resultado === 'aprobado' ? 'Documento aprobado.' : 'Revisión guardada con observaciones.';
           this.mensajeEnvio = '';
           if (resultado === 'aprobado') {
@@ -218,10 +241,14 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
     this.mensajeEnvio = '';
     this.subs.add(
       this.egresadoService
-        .crearRevision(this.id, { resultado: 'observaciones', observaciones: this.observacionesNueva })
+        .crearRevision(
+          this.id,
+          { resultado: 'observaciones', observaciones: this.observacionesNueva },
+          this.archivoRevision,
+        )
         .subscribe({
           next: (creada) => {
-            this.observacionesNueva = '';
+            this.limpiarFormularioRevision();
             this.enviarRevision(creada);
           },
           error: (err) => {
@@ -254,5 +281,40 @@ export class RevisionDocumentoComponent implements OnInit, OnDestroy {
         },
       }),
     );
+  }
+
+  descargarAdjuntoRevision(r: RevisionApi): void {
+    if (!r?.id || !this.id) return;
+    this.mensajeEnvio = '';
+    this.subs.add(
+      this.egresadoService.descargarDocumentoRevision(this.id, r.id).subscribe({
+        next: ({ blob, fileName }) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName || `revision-${r.numero_revision}.pdf`;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          const msg = err?.error?.error ?? err?.error?.message ?? err?.message ?? err?.statusText;
+          this.mensajeEnvio = msg ? `No se pudo descargar el adjunto: ${msg}` : 'No se pudo descargar el adjunto.';
+        },
+      }),
+    );
+  }
+
+  private limpiarFormularioRevision(): void {
+    this.observacionesNueva = '';
+    this.archivoRevision = null;
+    this.nombreArchivoRevision = '';
+    this.mensaje = '';
+    this.mensajeEnvio = '';
+    if (this.archivoRevisionInput?.nativeElement) {
+      this.archivoRevisionInput.nativeElement.value = '';
+    }
   }
 }

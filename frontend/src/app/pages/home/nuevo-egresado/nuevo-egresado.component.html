@@ -177,7 +177,9 @@
   </div>
 
   <div class="form-acciones">
-    <button type="button" class="btn btn-cancelar" (click)="onCancelar()">Cancelar</button>
-    <button type="submit" class="btn btn-agregar">{{ editando ? 'Guardar cambios' : 'Agregar' }}</button>
+    <button type="button" class="btn btn-cancelar" [disabled]="guardando" (click)="onCancelar()">Cancelar</button>
+    <button type="submit" class="btn btn-agregar" [disabled]="guardando">
+      {{ guardando ? (editando ? 'Guardando cambios...' : 'Agregando...') : (editando ? 'Guardar cambios' : 'Agregar') }}
+    </button>
   </div>
 </form>

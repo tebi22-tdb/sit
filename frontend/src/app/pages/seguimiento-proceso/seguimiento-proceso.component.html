@@ -97,6 +97,17 @@
             {{ detalleSeleccionado.datos_personales.nombre }} {{ detalleSeleccionado.datos_personales.apellido_paterno }}
             {{ detalleSeleccionado.datos_personales.apellido_materno }} · {{ detalleSeleccionado.numero_control }}
           </p>
+          <div
+            *ngIf="avisoPlazosNoResDetalle as plazos"
+            class="seg-plazos-banner"
+            [class.seg-plazos-banner--ok]="plazos.estadoGlobal === 'en_tiempo'"
+            [class.seg-plazos-banner--mid]="plazos.estadoGlobal === 'rezagado'"
+            [class.seg-plazos-banner--bad]="plazos.estadoGlobal === 'vencido'"
+          >
+            <p class="seg-plazos-line"><strong>Plazos (no residencia)</strong></p>
+            <p class="seg-plazos-line">{{ plazos.lineaProyecto }}</p>
+            <p class="seg-plazos-line">{{ plazos.lineaTitulacion }}</p>
+          </div>
         </div>
         <p *ngIf="mensajeProceso" class="seg-msg">{{ mensajeProceso }}</p>
         <p *ngIf="cargandoDetalle" class="seg-msg">Cargando detalle del egresado...</p>
@@ -118,7 +129,7 @@
                 [class.seg-proceso-chip-curso]="paso.estado === 'en_curso'"
                 [class.seg-proceso-chip-pendiente]="paso.estado === 'pendiente'"
               >
-                {{ etiquetaEstadoPaso(paso.estado) }}
+                {{ etiquetaEstadoPasoPara(paso) }}
               </span>
             </div>
             <div class="seg-proceso-fecha" *ngIf="paso.fecha">
@@ -155,6 +166,33 @@
                 (click)="confirmarEntrega93()"
               >
                 Confirmar
+              </button>
+              <button
+                *ngIf="
+                  paso.key === 'fecha_solicitud_documentacion_escaneada' &&
+                  detalleSeleccionado.fecha_creacion_anexo_9_3 &&
+                  (!esResidenciaProfesionalSeguimiento || detalleSeleccionado.fecha_confirmacion_entrega_anexo_9_3) &&
+                  !detalleSeleccionado.fecha_solicitud_documentacion_escaneada
+                "
+                type="button"
+                class="seg-btn"
+                [disabled]="procesandoPaso"
+                (click)="solicitarDocumentacionEscaneada()"
+              >
+                Enviar
+              </button>
+              <button
+                *ngIf="
+                  paso.key === 'fecha_confirmacion_documentacion_escaneada_recibida' &&
+                  detalleSeleccionado.fecha_envio_documentacion_escaneada_egresado &&
+                  !detalleSeleccionado.fecha_confirmacion_documentacion_escaneada_recibida
+                "
+                type="button"
+                class="seg-btn"
+                [disabled]="procesandoPaso"
+                (click)="confirmarDocumentacionEscaneadaRecibida()"
+              >
+                Recibido
               </button>
             </div>
           </div>

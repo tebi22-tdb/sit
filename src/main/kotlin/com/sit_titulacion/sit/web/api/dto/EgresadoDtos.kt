@@ -45,9 +45,14 @@ data class EgresadoListItemDto(
     val modalidad: String,
     @JsonProperty("fecha_creacion") val fecha_creacion: String?,
     @JsonProperty("fecha_enviado_departamento_academico") val fecha_enviado_departamento_academico: String?,
+    @JsonProperty("fecha_recibido_registro_liberacion") val fecha_recibido_registro_liberacion: String? = null,
+    @JsonProperty("fecha_confirmacion_recibidos_anexo_xxxi_xxxii") val fecha_confirmacion_recibidos_anexo_xxxi_xxxii: String? = null,
     @JsonProperty("fecha_actualizacion") val fecha_actualizacion: String?,
     @JsonProperty("fecha_creacion_anexo_9_3") val fecha_creacion_anexo_9_3: String?,
     @JsonProperty("fecha_confirmacion_entrega_anexo_9_3") val fecha_confirmacion_entrega_anexo_9_3: String? = null,
+    @JsonProperty("fecha_solicitud_documentacion_escaneada") val fecha_solicitud_documentacion_escaneada: String? = null,
+    @JsonProperty("fecha_envio_documentacion_escaneada_egresado") val fecha_envio_documentacion_escaneada_egresado: String? = null,
+    @JsonProperty("fecha_confirmacion_documentacion_escaneada_recibida") val fecha_confirmacion_documentacion_escaneada_recibida: String? = null,
 )
 
 /** Item para la lista del departamento académico (Pendientes, En corrección, Aprobados, etc.). */
@@ -94,6 +99,10 @@ data class RevisionDto(
     val observaciones: String? = null,
     @JsonProperty("enviado_al_egresado") val enviadoAlEgresado: Boolean = false,
     @JsonProperty("fecha_envio_egresado") val fechaEnvioEgresado: String? = null,
+    @JsonProperty("tiene_documento_adjunto") val tieneDocumentoAdjunto: Boolean = false,
+    @JsonProperty("documento_nombre") val documentoNombre: String? = null,
+    @JsonProperty("documento_content_type") val documentoContentType: String? = null,
+    @JsonProperty("documento_tamanio_bytes") val documentoTamanioBytes: Long? = null,
 )
 
 /** Cuerpo para crear una revisión (Enviar revisión con observaciones). */
@@ -127,6 +136,9 @@ data class EgresadoDetailDto(
     @JsonProperty("fecha_agenda_acto_9_3") val fecha_agenda_acto_9_3: String? = null,
     @JsonProperty("fecha_creacion_anexo_9_3") val fecha_creacion_anexo_9_3: String? = null,
     @JsonProperty("fecha_confirmacion_entrega_anexo_9_3") val fecha_confirmacion_entrega_anexo_9_3: String? = null,
+    @JsonProperty("fecha_solicitud_documentacion_escaneada") val fecha_solicitud_documentacion_escaneada: String? = null,
+    @JsonProperty("fecha_envio_documentacion_escaneada_egresado") val fecha_envio_documentacion_escaneada_egresado: String? = null,
+    @JsonProperty("fecha_confirmacion_documentacion_escaneada_recibida") val fecha_confirmacion_documentacion_escaneada_recibida: String? = null,
 )
 
 data class DocumentoAdjuntoDto(

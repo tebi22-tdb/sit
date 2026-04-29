@@ -21,9 +21,14 @@ export interface EgresadoItem {
   modalidad?: string;
   fecha_creacion?: string;
   fecha_enviado_departamento_academico?: string;
+  fecha_recibido_registro_liberacion?: string;
+  fecha_confirmacion_recibidos_anexo_xxxi_xxxii?: string;
   fecha_actualizacion?: string;
   fecha_creacion_anexo_9_3?: string;
   fecha_confirmacion_entrega_anexo_9_3?: string;
+  fecha_solicitud_documentacion_escaneada?: string;
+  fecha_envio_documentacion_escaneada_egresado?: string;
+  fecha_confirmacion_documentacion_escaneada_recibida?: string;
 }
 
 // Archivo adjunto guardado (para mostrar en edición)
@@ -61,6 +66,9 @@ export interface EgresadoDetail {
   fecha_creacion_anexo_9_3?: string;
   /** Confirmación de entrega del 9.3 a sinodales y sustentante (flujo residencia / DEP). */
   fecha_confirmacion_entrega_anexo_9_3?: string;
+  fecha_solicitud_documentacion_escaneada?: string;
+  fecha_envio_documentacion_escaneada_egresado?: string;
+  fecha_confirmacion_documentacion_escaneada_recibida?: string;
 }
 
 // Datos personales dentro del detalle
@@ -119,6 +127,10 @@ export interface RevisionApi {
   observaciones?: string;
   enviado_al_egresado?: boolean;
   fecha_envio_egresado?: string;
+  tiene_documento_adjunto?: boolean;
+  documento_nombre?: string;
+  documento_content_type?: string;
+  documento_tamanio_bytes?: number;
 }
 
 /** Conteos para las pestañas del departamento académico. */
@@ -148,7 +160,14 @@ export class EgresadoService {
   constructor(private http: HttpClient) {}
 
   // Pido la lista de egresados; filtros opcionales: numero_control, fecha_desde, fecha_hasta, tipo_filtro (anexo_xxxi | constancia)
-  listar(filtros?: { numero_control?: string; fecha_desde?: string; fecha_hasta?: string; tipo_filtro?: string }): Observable<EgresadoItem[]> {
+  // aplicar_scope_departamento=false: evita recortes de modalidad en vistas globales de seguimiento.
+  listar(filtros?: {
+    numero_control?: string;
+    fecha_desde?: string;
+    fecha_hasta?: string;
+    tipo_filtro?: string;
+    aplicar_scope_departamento?: boolean;
+  }): Observable<EgresadoItem[]> {
     let params = new HttpParams();
     if (filtros?.numero_control?.trim()) {
       params = params.set('numero_control', filtros.numero_control.trim());
@@ -162,12 +181,19 @@ export class EgresadoService {
     if (filtros?.tipo_filtro) {
       params = params.set('tipo_filtro', filtros.tipo_filtro);
     }
+    if (typeof filtros?.aplicar_scope_departamento === 'boolean') {
+      params = params.set('aplicar_scope_departamento', String(filtros.aplicar_scope_departamento));
+    }
     return this.http.get<EgresadoItem[]>(API, { params });
   }
 
   // Pido un egresado por su id (el que viene de MongoDB)
-  obtenerPorId(id: string): Observable<EgresadoDetail> {
-    return this.http.get<EgresadoDetail>(`${API}/${id}`);
+  obtenerPorId(id: string, aplicarScopeDepartamento?: boolean): Observable<EgresadoDetail> {
+    let params = new HttpParams();
+    if (typeof aplicarScopeDepartamento === 'boolean') {
+      params = params.set('aplicar_scope_departamento', String(aplicarScopeDepartamento));
+    }
+    return this.http.get<EgresadoDetail>(`${API}/${id}`, { params });
   }
 
   // Por si el id falla, busco por número de control (respaldo)
@@ -216,8 +242,19 @@ export class EgresadoService {
   }
 
   /** Crea una revisión (Enviar revisión con observaciones). Solo rol academico. */
-  crearRevision(egresadoId: string, body: { resultado: string; observaciones?: string }): Observable<RevisionApi> {
-    return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones`, body);
+  crearRevision(
+    egresadoId: string,
+    body: { resultado: string; observaciones?: string },
+    archivo?: File | null,
+  ): Observable<RevisionApi> {
+    if (!archivo) {
+      return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones`, body);
+    }
+    const formData = new FormData();
+    formData.append('resultado', body.resultado);
+    if (body.observaciones?.trim()) formData.append('observaciones', body.observaciones.trim());
+    formData.append('archivo', archivo, archivo.name);
+    return this.http.post<RevisionApi>(`${API}/${egresadoId}/revisiones`, formData);
   }
 
   /** Marca una revisión como enviada al egresado para mostrarla en su seguimiento. */
@@ -228,6 +265,32 @@ export class EgresadoService {
   /** Seguimiento del egresado: revisiones enviadas desde apoyo/departamento. */
   getMisRevisionesEnviadas(): Observable<RevisionApi[]> {
     return this.http.get<RevisionApi[]>(`${API}/mi-seguimiento/revisiones`);
+  }
+
+  descargarDocumentoRevision(egresadoId: string, revisionId: string): Observable<{ blob: Blob; fileName: string }> {
+    return this.http
+      .get(`${API}/${egresadoId}/revisiones/${revisionId}/documento`, { responseType: 'blob', observe: 'response' })
+      .pipe(
+        map((res) => {
+          const disp = res.headers.get('Content-Disposition') || '';
+          const match = disp.match(/filename[*]?=(?:UTF-8'')?"?([^";\n]+)"?/i);
+          const fileName = match ? match[1].trim() : `revision-${revisionId}.pdf`;
+          return { blob: res.body!, fileName };
+        }),
+      );
+  }
+
+  descargarDocumentoMiRevision(revisionId: string): Observable<{ blob: Blob; fileName: string }> {
+    return this.http
+      .get(`${API}/mi-seguimiento/revisiones/${revisionId}/documento`, { responseType: 'blob', observe: 'response' })
+      .pipe(
+        map((res) => {
+          const disp = res.headers.get('Content-Disposition') || '';
+          const match = disp.match(/filename[*]?=(?:UTF-8'')?"?([^";\n]+)"?/i);
+          const fileName = match ? match[1].trim() : `revision-${revisionId}.pdf`;
+          return { blob: res.body!, fileName };
+        }),
+      );
   }
 
   /** Obtiene el documento adjunto del egresado (PDF/Word) para visualización. Solo rol academico. */
@@ -316,6 +379,23 @@ export class EgresadoService {
 
   confirmarEntregaAnexo93(id: string): Observable<unknown> {
     return this.http.post(`${API}/${id}/confirmar-entrega-anexo-9-3`, {});
+  }
+
+  solicitarDocumentacionEscaneada(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/solicitar-documentacion-escaneada`, {});
+  }
+
+  confirmarDocumentacionEscaneadaRecibida(id: string): Observable<unknown> {
+    return this.http.post(`${API}/${id}/confirmar-documentacion-escaneada-recibida`, {});
+  }
+
+  /** Egresado: sube uno o más PDF (multipart, campo `archivos`). */
+  subirDocumentacionEscaneadaMiSeguimiento(archivos: File[]): Observable<unknown> {
+    const formData = new FormData();
+    for (const f of archivos) {
+      formData.append('archivos', f, f.name);
+    }
+    return this.http.post(`${API}/mi-seguimiento/documentacion-escaneada`, formData);
   }
 
   actualizar(id: string, datos: EgresadoForm, archivo: File | null): Observable<unknown> {

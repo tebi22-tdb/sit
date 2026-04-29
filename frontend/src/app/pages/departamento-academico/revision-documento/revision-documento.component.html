@@ -98,6 +98,12 @@
             <p class="revision-detalle-obs">{{ revisionSeleccionada.observaciones }}</p>
           </div>
           <div *ngIf="!revisionSeleccionada.observaciones"><strong>Observaciones:</strong> —</div>
+          <div *ngIf="revisionSeleccionada.tiene_documento_adjunto" class="revision-detalle-adjunto">
+            <strong>Documento adjunto:</strong>
+            <button type="button" class="revision-btn-enviar-item" (click)="descargarAdjuntoRevision(revisionSeleccionada)">
+              Descargar PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -108,11 +114,6 @@
         </p>
       </div>
 
-      <div class="revision-footer-acciones">
-        <button type="button" (click)="volver()" class="revision-btn-comentario revision-btn-volver">
-          Volver
-        </button>
-      </div>
     </section>
 
     <!-- Derecha: nueva revisión + historial -->
@@ -131,6 +132,19 @@
             rows="5"
             placeholder="Observaciones para el egresado o el comité. Si apruebas, puedes dejarlo en blanco."
           ></textarea>
+        </div>
+        <div class="revision-form-campo">
+          <label for="archivoRevision" class="revision-label-obs">Adjuntar PDF para el egresado (opcional)</label>
+          <input
+            #archivoRevisionInput
+            id="archivoRevision"
+            type="file"
+            class="revision-file-input"
+            accept=".pdf,application/pdf"
+            [disabled]="guardando"
+            (change)="onArchivoRevision($event)"
+          />
+          <p *ngIf="nombreArchivoRevision" class="revision-adjunto-nombre">Archivo listo: {{ nombreArchivoRevision }}</p>
         </div>
 
         <div class="revision-acciones">
@@ -213,6 +227,14 @@
             >
               Enviada
             </span>
+            <button
+              *ngIf="r.tiene_documento_adjunto"
+              type="button"
+              class="revision-btn-enviar-item"
+              (click)="descargarAdjuntoRevision(r); $event.stopPropagation()"
+            >
+              PDF
+            </button>
             <span class="revision-chevron" aria-hidden="true">›</span>
           </li>
 

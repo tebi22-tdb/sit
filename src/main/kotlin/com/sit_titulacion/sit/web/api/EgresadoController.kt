@@ -70,6 +70,7 @@ class EgresadoController(
         @RequestParam(required = false) fecha_desde: String?,
         @RequestParam(required = false) fecha_hasta: String?,
         @RequestParam(required = false) tipo_filtro: String?,
+        @RequestParam(required = false, defaultValue = "true") aplicar_scope_departamento: Boolean,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<List<EgresadoListItemDto>> {
         val desde = parseFechaParam(fecha_desde)
@@ -80,7 +81,7 @@ class EgresadoController(
             else -> null
         }
         val scopeUsername =
-            if (principal != null && puedeVerBandejaDepartamento(principal.getRol())) {
+            if (aplicar_scope_departamento && principal != null && puedeVerBandejaDepartamento(principal.getRol())) {
                 principal.username
             } else {
                 null
@@ -170,9 +171,10 @@ class EgresadoController(
     @GetMapping("/{id}")
     fun obtenerPorId(
         @PathVariable id: String,
+        @RequestParam(required = false, defaultValue = "true") aplicar_scope_departamento: Boolean,
         @AuthenticationPrincipal principal: UsuarioPrincipal?,
     ): ResponseEntity<*> {
-        if (principal != null) {
+        if (aplicar_scope_departamento && principal != null) {
             val rol = principal.getRol().trim().lowercase()
             when {
                 rol == "academico" -> respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
@@ -592,12 +594,74 @@ class EgresadoController(
         else ResponseEntity.notFound().build<Void>()
     }
 
+    /** Crea revisión con adjunto PDF opcional en multipart/form-data. */
+    @PostMapping(value = ["/{id}/revisiones"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun crearRevisionMultipart(
+        @PathVariable id: String,
+        @RequestParam resultado: String,
+        @RequestParam(required = false) observaciones: String?,
+        @RequestPart(required = false) archivo: MultipartFile?,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
+        val creada = revisionService.crear(
+            id,
+            CreateRevisionRequestDto(resultado = resultado, observaciones = observaciones),
+            principal.getRol(),
+            archivo,
+        )
+        return if (creada != null) {
+            ResponseEntity.status(HttpStatus.CREATED).body(creada)
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("error" to "No se pudo crear la revisión. Si adjuntas archivo, debe ser PDF válido."))
+        }
+    }
+
+    /** Descarga documento PDF adjunto de una revisión (vista coordinación/académico). */
+    @GetMapping("/{id}/revisiones/{revisionId}/documento")
+    fun descargarDocumentoRevision(
+        @PathVariable id: String,
+        @PathVariable revisionId: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null || !puedeVerBandejaDepartamento(principal.getRol())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        }
+        respuestaSiNoAccesoEgresadoBandeja(id, principal)?.let { return it }
+        val doc = revisionService.obtenerDocumentoAdjunto(id, revisionId, requiereEnviadaEgresado = false)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "La revisión no tiene documento adjunto."))
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(doc.contentType))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${doc.fileName}\"")
+            .body(doc.bytes)
+    }
+
     /** Seguimiento del egresado: revisiones que ya fueron enviadas para corrección. */
     @GetMapping("/mi-seguimiento/revisiones")
     fun miSeguimientoRevisiones(@AuthenticationPrincipal principal: UsuarioPrincipal?): ResponseEntity<*> {
         if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
         val egresadoId = resolverEgresadoIdParaMiSeguimiento(principal) ?: return ResponseEntity.notFound().build<Void>()
         return ResponseEntity.ok(revisionService.listarEnviadasAlEgresado(egresadoId))
+    }
+
+    /** Descarga adjunto PDF de una revisión enviada al egresado en su seguimiento. */
+    @GetMapping("/mi-seguimiento/revisiones/{revisionId}/documento")
+    fun miSeguimientoDescargarDocumentoRevision(
+        @PathVariable revisionId: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        val egresadoId = resolverEgresadoIdParaMiSeguimiento(principal) ?: return ResponseEntity.notFound().build<Void>()
+        val doc = revisionService.obtenerDocumentoAdjunto(egresadoId, revisionId, requiereEnviadaEgresado = true)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "No hay documento adjunto para esta revisión."))
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(doc.contentType))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${doc.fileName}\"")
+            .body(doc.bytes)
     }
 
     @PostMapping("/{id}/agendar-acto-9-3", consumes = [MediaType.APPLICATION_JSON_VALUE])
@@ -656,6 +720,64 @@ class EgresadoController(
                 mapOf("error" to "No se pudo confirmar: primero debe generarse el anexo 9.3 o ya estaba confirmada la entrega."),
             )
         }
+    }
+
+    @PostMapping("/{id}/solicitar-documentacion-escaneada")
+    fun solicitarDocumentacionEscaneada(
+        @PathVariable id: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        return if (egresadoService.solicitarDocumentacionEscaneada(id)) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                mapOf("error" to "No se pudo registrar la solicitud. Revisa que el anexo 9.3 esté listo (y la entrega 9.3 en residencia) y que no exista una solicitud previa."),
+            )
+        }
+    }
+
+    @PostMapping("/{id}/confirmar-documentacion-escaneada-recibida")
+    fun confirmarDocumentacionEscaneadaRecibida(
+        @PathVariable id: String,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        respuestaSiAcademicoSinCarrera(id, principal)?.let { return it }
+        return if (egresadoService.confirmarDocumentacionEscaneadaRecibida(id)) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                mapOf("error" to "No se pudo confirmar: el egresado debe haber enviado sus PDF o ya estaba confirmada la recepción."),
+            )
+        }
+    }
+
+    @PostMapping("/mi-seguimiento/documentacion-escaneada", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun miSeguimientoSubirDocumentacionEscaneada(
+        @RequestPart("archivos") archivos: List<MultipartFile>?,
+        @AuthenticationPrincipal principal: UsuarioPrincipal?,
+    ): ResponseEntity<*> {
+        if (principal == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).build<Void>()
+        if (!esRolEgresado(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                mapOf("error" to "Solo el egresado puede subir documentación desde el seguimiento."),
+            )
+        }
+        val egresadoId = resolverEgresadoIdParaMiSeguimiento(principal)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "No se encontró tu registro de titulación."))
+        val err = egresadoService.subirDocumentacionEscaneadaEgresado(egresadoId, archivos)
+        return if (err == null) {
+            ResponseEntity.ok().build<Void>()
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to err))
+        }
+    }
+
+    private fun esRolEgresado(principal: UsuarioPrincipal): Boolean {
+        val r = principal.getRol().trim().lowercase().replace(' ', '_')
+        return r == "egresado"
     }
 
     /**

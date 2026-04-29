@@ -9,6 +9,7 @@ import { catchError, EMPTY, finalize, of, throwError, timeout } from 'rxjs';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { mensajeErrorApiConBlob } from '../../core/http-blob-error';
 import { EgresadoService, EgresadoDetail, EgresadoItem } from '../../services/egresado.service';
+import { calcularVistaPlazosNoResidencia } from '../../core/plazos-titulacion-no-residencia';
 
 type EstadoFiltro = 'todos' | 'en_tiempo' | 'rezagado' | 'vencido';
 type OrdenFiltro = 'prioridad' | 'nombre' | 'control';
@@ -194,6 +195,18 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     return (this.detalleSeleccionado?.datos_proyecto?.modalidad ?? '').trim() === 'Residencia Profesional';
   }
 
+  /** Aviso 12 + 6 meses solo para modalidades distintas a residencia. */
+  get avisoPlazosNoResDetalle(): ReturnType<typeof calcularVistaPlazosNoResidencia> | null {
+    const d = this.detalleSeleccionado;
+    if (!d || this.esResidenciaProfesionalSeguimiento) return null;
+    return calcularVistaPlazosNoResidencia({
+      fecha_creacion: d.fecha_creacion,
+      fecha_enviado_departamento_academico: d.fecha_enviado_departamento_academico,
+      fecha_confirmacion_recibidos_anexo_xxxi_xxxii: d.fecha_confirmacion_recibidos_anexo_xxxi_xxxii,
+      fecha_confirmacion_documentacion_escaneada_recibida: d.fecha_confirmacion_documentacion_escaneada_recibida,
+    });
+  }
+
   seleccionarEgresado(item: SeguimientoItem): void {
     if (this.procesandoPaso) {
       this.mensajeProceso = 'Espera a que termine la acción en curso (por ejemplo agendar o crear anexo).';
@@ -213,7 +226,7 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       }
     }, 22000);
     this.egresadoService
-      .obtenerPorId(item.id)
+      .obtenerPorId(item.id, false)
       .pipe(
         timeout(20000),
         // Solo usamos respaldo por numero_control si el backend responde 404 al id.
@@ -255,19 +268,25 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
       return;
     }
     const esRes = this.esResidenciaProfesionalSeguimiento;
-    const pasosResidencia: PasoTitulacionDef[] = [
+    /** Pasos 1–2: residencia y otras modalidades tienen texto distinto. */
+    const pasosInicioPorModalidad: PasoTitulacionDef[] = [
       {
         key: 'fecha_enviado_departamento_academico',
-        titulo:
-          'Envío del DEP de solicitud para registro y liberación de proyecto de titulación integral por residencia al departamento académico',
+        titulo: esRes
+          ? 'Envío de la DEP la  solicitud para registro y liberación de proyecto de titulación integral al departamento académico'
+          : 'La DEP envía la solicitud de registro, revisión y aprobación del proyecto de titulación integral al Departamento de Apoyo a la Titulación.',
         descripcion: 'La DEP registra el envío de la solicitud al departamento académico.',
       },
       {
         key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
-        titulo:
-          'Recibimos anexo XXXII y XXXIII (registro y liberación) del proyecto de titulación integral por parte del departamento académico',
+        titulo: esRes
+          ? 'Recibimos anexos XXXII y XXXIII (registro y liberación) del proyecto de titulación integral por parte del departamento académico'
+          : 'La DEP recibe los anexos XXXII y XXXIII (registro y aprobación) del proyecto de titulación integral por parte del Departamento de Apoyo a la Titulación.',
         descripcion: 'La DEP confirma la recepción de los documentos del departamento académico.',
       },
+    ];
+    /** Pasos 3 en adelante: mismos textos detallados para todas las modalidades. */
+    const pasosTitulacionCompartidos: PasoTitulacionDef[] = [
       {
         key: 'fecha_creacion_anexo_9_1',
         titulo: 'Generar anexo 9.1 (formato de solicitud del acto de recepción profesional)',
@@ -311,68 +330,71 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
           'La DEP genera el anexo 9.3 (aviso de realización de acto protocolario de titulación integral)',
         descripcion: 'Se genera el PDF del anexo 9.3 después del agendamiento.',
       },
+    ];
+    const pasoEntrega93Residencia: PasoTitulacionDef[] = esRes
+      ? [
+          {
+            key: 'fecha_confirmacion_entrega_anexo_9_3',
+            titulo: 'Entrega de anexo 9.3 a sinodales y sustentante',
+            descripcion: 'La DEP confirma la entrega del aviso al jurado y al sustentante.',
+          },
+        ]
+      : [];
+    const pasosDocumentacionEscaneada: PasoTitulacionDef[] = [
       {
-        key: 'fecha_confirmacion_entrega_anexo_9_3',
-        titulo: 'Entrega de anexo 9.3 a sinodales y sustentante',
-        descripcion: 'La DEP confirma la entrega del aviso al jurado y al sustentante.',
+        key: 'fecha_solicitud_documentacion_escaneada',
+        titulo: 'Entrega de documentación escaneada del proceso correspondiente a la titulación integral',
+        descripcion: 'La DEP solicita al sustentante que suba en el sistema los PDF de su proceso.',
+      },
+      {
+        key: 'fecha_confirmacion_documentacion_escaneada_recibida',
+        titulo: 'Se recibió documentación correspondiente a la titulación integral',
+        descripcion: 'La DEP confirma la recepción de los documentos escaneados enviados por el sustentante.',
       },
     ];
-    const pasosOtrasModalidades: PasoTitulacionDef[] = [
-      {
-        key: 'fecha_enviado_departamento_academico',
-        titulo: 'Enviar a anexos XXXI y XXXII revisión académica',
-        descripcion: 'El expediente se envía al departamento académico para revisión.',
-      },
-      {
-        key: 'fecha_confirmacion_recibidos_anexo_xxxi_xxxii',
-        titulo: 'Recibidos revisión académica de anexos XXXI y XXXII',
-        descripcion: 'División confirma la recepción del dictamen de revisión académica (aprobado).',
-      },
-      {
-        key: 'fecha_creacion_anexo_9_1',
-        titulo: 'Crear anexo 9.1',
-        descripcion: 'Se genera el anexo 9.1 dentro del flujo de titulación.',
-      },
-      {
-        key: 'fecha_confirmacion_entrega_anexo_9_1',
-        titulo: 'Entrega de anexo 9.1',
-        descripcion: 'El egresado confirma entrega del anexo 9.1.',
-      },
-      {
-        key: 'fecha_solicitud_anexo_9_2',
-        titulo: 'Solicitar anexo 9.2 al egresado',
-        descripcion: 'División registra la solicitud de entrega de la constancia 9.2.',
-      },
-      {
-        key: 'fecha_confirmacion_recibido_anexo_9_2',
-        titulo: 'Recibido anexo 9.2',
-        descripcion: 'Se confirma la recepción de la constancia 9.2 (división o egresado).',
-      },
-      {
-        key: 'fecha_solicitud_sinodales',
-        titulo: 'Solicitud de sinodales',
-        descripcion: 'Se solicita la asignación del tribunal de sinodales.',
-      },
-      {
-        key: 'fecha_confirmacion_sinodales_recibidos',
-        titulo: 'Recibimos sinodales',
-        descripcion: 'Se confirma que el egresado recibió la asignación de sinodales.',
-      },
-      {
-        key: 'fecha_agenda_acto_9_3',
-        titulo: 'Agendar acto 9.3',
-        descripcion: 'Se agenda fecha y hora del acto protocolario 9.3.',
-      },
-      {
-        key: 'fecha_creacion_anexo_9_3',
-        titulo: 'Crear anexo 9.3',
-        descripcion: 'Se genera el anexo 9.3 después del agendamiento.',
-      },
+    const steps = [
+      ...pasosInicioPorModalidad,
+      ...pasosTitulacionCompartidos,
+      ...pasoEntrega93Residencia,
+      ...pasosDocumentacionEscaneada,
     ];
-    const steps = esRes ? pasosResidencia : pasosOtrasModalidades;
     const d = this.detalleSeleccionado;
     let todosPreviosCompletados = true;
     this.pasosProcesoTitulacionCache = steps.map((s, i) => {
+      if (s.key === 'fecha_solicitud_documentacion_escaneada') {
+        const fecha = d.fecha_solicitud_documentacion_escaneada;
+        const completado = !!fecha;
+        const estado: EstadoPaso = completado ? 'completado' : todosPreviosCompletados ? 'en_curso' : 'pendiente';
+        if (!completado) todosPreviosCompletados = false;
+        return {
+          numero: i + 1,
+          key: s.key,
+          titulo: s.titulo,
+          descripcion: s.descripcion,
+          fecha,
+          estado,
+        };
+      }
+      if (s.key === 'fecha_confirmacion_documentacion_escaneada_recibida') {
+        const fechaConf = d.fecha_confirmacion_documentacion_escaneada_recibida;
+        const fechaEnv = d.fecha_envio_documentacion_escaneada_egresado;
+        const completado = !!fechaConf;
+        let estado: EstadoPaso;
+        if (completado) estado = 'completado';
+        else if (!todosPreviosCompletados) estado = 'pendiente';
+        else if (fechaEnv) estado = 'en_curso';
+        else estado = 'pendiente';
+        const fecha = fechaConf || fechaEnv;
+        if (!completado) todosPreviosCompletados = false;
+        return {
+          numero: i + 1,
+          key: s.key,
+          titulo: s.titulo,
+          descripcion: s.descripcion,
+          fecha,
+          estado,
+        };
+      }
       const fecha = (d as unknown as Record<string, string | undefined>)[s.key];
       const completado = !!fecha;
       const estado: EstadoPaso = completado ? 'completado' : (todosPreviosCompletados ? 'en_curso' : 'pendiente');
@@ -394,6 +416,19 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     return 'Pendiente';
   }
 
+  etiquetaEstadoPasoPara(paso: PasoProcesoUi): string {
+    const d = this.detalleSeleccionado;
+    if (
+      paso.key === 'fecha_confirmacion_documentacion_escaneada_recibida' &&
+      paso.estado === 'pendiente' &&
+      d?.fecha_solicitud_documentacion_escaneada &&
+      !d?.fecha_envio_documentacion_escaneada_egresado
+    ) {
+      return 'En espera del egresado';
+    }
+    return this.etiquetaEstadoPaso(paso.estado);
+  }
+
   formatearFechaHora(iso?: string): string {
     if (!iso) return '';
     const d = new Date(iso);
@@ -410,7 +445,7 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     if (!this.detalleSeleccionado) return;
     const id = this.detalleSeleccionado.id;
     this.egresadoService
-      .obtenerPorId(id)
+      .obtenerPorId(id, false)
       .pipe(
         timeout(25000),
         catchError((err) => {
@@ -688,10 +723,44 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     });
   }
 
+  solicitarDocumentacionEscaneada(): void {
+    if (!this.detalleSeleccionado || this.procesandoPaso) return;
+    this.procesandoPaso = true;
+    this.mensajeProceso = '';
+    this.egresadoService.solicitarDocumentacionEscaneada(this.detalleSeleccionado.id).subscribe({
+      next: () => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = 'Solicitud de documentación escaneada registrada.';
+        this.refrescarDetalle();
+      },
+      error: (err) => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = err?.error?.error ?? 'No se pudo registrar la solicitud.';
+      },
+    });
+  }
+
+  confirmarDocumentacionEscaneadaRecibida(): void {
+    if (!this.detalleSeleccionado || this.procesandoPaso) return;
+    this.procesandoPaso = true;
+    this.mensajeProceso = '';
+    this.egresadoService.confirmarDocumentacionEscaneadaRecibida(this.detalleSeleccionado.id).subscribe({
+      next: () => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = 'Recepción de documentación escaneada confirmada.';
+        this.refrescarDetalle();
+      },
+      error: (err) => {
+        this.procesandoPaso = false;
+        this.mensajeProceso = err?.error?.error ?? 'No se pudo confirmar la recepción.';
+      },
+    });
+  }
+
   private cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.egresadoService.listar().subscribe({
+    this.egresadoService.listar({ aplicar_scope_departamento: false }).subscribe({
       next: (lista: EgresadoItem[]) => {
         this.items = lista.map((e) => this.mapearItem(e));
         this.cargando = false;
@@ -712,9 +781,10 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
     const ultimoMovimiento = isoUltimo ? this.formatoFecha(new Date(isoUltimo)) : '—';
 
     const esRes = modalidad.trim().toLowerCase() === 'residencia profesional';
+    const docCerrado = !!e.fecha_confirmacion_documentacion_escaneada_recibida;
     const tituloListo =
-      esRes && e.fecha_creacion_anexo_9_3 && e.fecha_confirmacion_entrega_anexo_9_3;
-    const tituloListoOtras = !esRes && e.fecha_creacion_anexo_9_3;
+      esRes && e.fecha_creacion_anexo_9_3 && e.fecha_confirmacion_entrega_anexo_9_3 && docCerrado;
+    const tituloListoOtras = !esRes && e.fecha_creacion_anexo_9_3 && docCerrado;
     if (tituloListo || tituloListoOtras) {
       return {
         id: e.id,
@@ -726,6 +796,35 @@ export class SeguimientoProcesoComponent implements OnInit, OnDestroy {
         documentoFaltante: 'Sin atraso',
         ultimoMovimiento,
         fechaLimite: 'Finalizado',
+      };
+    }
+
+    if (!esRes) {
+      const plazos = calcularVistaPlazosNoResidencia(
+        {
+          fecha_creacion: e.fecha_creacion,
+          fecha_enviado_departamento_academico: e.fecha_enviado_departamento_academico,
+          fecha_confirmacion_recibidos_anexo_xxxi_xxxii: e.fecha_confirmacion_recibidos_anexo_xxxi_xxxii,
+          fecha_confirmacion_documentacion_escaneada_recibida: e.fecha_confirmacion_documentacion_escaneada_recibida,
+        },
+        hoy,
+      );
+      const estado = plazos.estadoGlobal;
+      const fechaLimite = plazos.fechaLimiteMasCercana
+        ? this.formatoFecha(plazos.fechaLimiteMasCercana)
+        : '—';
+      const documentoFaltante =
+        estado === 'vencido' ? 'Plazo vencido' : estado === 'rezagado' ? 'En curso (cerca del límite)' : 'En curso';
+      return {
+        id: e.id,
+        alumno: e.nombre || '—',
+        noControl: e.numero_control || '—',
+        producto,
+        carrera: e.carrera || '—',
+        estado,
+        documentoFaltante,
+        ultimoMovimiento,
+        fechaLimite,
       };
     }
 

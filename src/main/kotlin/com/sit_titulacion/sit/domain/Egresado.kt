@@ -44,4 +44,10 @@ data class Egresado(
     @Field("fecha_creacion_anexo_9_3") val fechaCreacionAnexo93: Instant? = null,
     /** DEP confirma entrega del anexo 9.3 a sinodales y sustentante. */
     @Field("fecha_confirmacion_entrega_anexo_9_3") val fechaConfirmacionEntregaAnexo93: Instant? = null,
+    /** DEP solicita al egresado subir documentación escaneada del proceso (titulación integral). */
+    @Field("fecha_solicitud_documentacion_escaneada") val fechaSolicitudDocumentacionEscaneada: Instant? = null,
+    /** Egresado envió PDFs vía sistema (colección documentacion_escaneada). */
+    @Field("fecha_envio_documentacion_escaneada_egresado") val fechaEnvioDocumentacionEscaneadaEgresado: Instant? = null,
+    /** DEP confirma recepción de la documentación escaneada. */
+    @Field("fecha_confirmacion_documentacion_escaneada_recibida") val fechaConfirmacionDocumentacionEscaneadaRecibida: Instant? = null,
 )

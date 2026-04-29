@@ -5,7 +5,7 @@
 <title>Anexo 9.1</title>
 <style type="text/css">
 /* A4 — márgenes institucionales (~2,5 cm) */
-@page { size: A4; margin: 25mm 22mm 20mm 22mm; }
+@page { size: A4; margin: 24mm 20mm 18mm 20mm; }
 * { box-sizing: border-box; }
 html, body {
   margin: 0;
@@ -20,8 +20,8 @@ html, body {
   min-height: 248mm;
 }
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11pt;
+  font-family: "Montserrat Medium", "Montserrat", Arial, Helvetica, sans-serif;
+  font-size: 10pt;
   color: #000;
   line-height: 1.45;
   -webkit-print-color-adjust: exact;
@@ -31,9 +31,10 @@ body {
 table.hdr {
   width: 100%;
   border-collapse: collapse;
-  margin: 0 0 22px;
-  font-size: 9pt;
+  margin: 0 0 14px;
+  font-size: 11pt;
   table-layout: fixed;
+  font-family: Arial, Helvetica, sans-serif;
 }
 table.hdr td {
   border: 1px solid #000;
@@ -46,7 +47,7 @@ table.hdr .logo {
   padding: 8px 6px;
 }
 table.hdr .logo img {
-  width: 78px;
+  width: 82px;
   height: auto;
   max-height: 82px;
   display: block;
@@ -67,16 +68,17 @@ table.hdr .meta-pag {
 /* —— Títulos (más aire respecto a la tabla, como plantilla) —— */
 .tit-anexo {
   text-align: center;
-  font-size: 10.5pt;
+  font-size: 9pt;
   font-weight: bold;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   line-height: 1.4;
+  font-family: "Montserrat Medium", "Montserrat", Arial, Helvetica, sans-serif;
 }
 .tit-sol {
   font-weight: bold;
   text-align: center;
   font-size: 13pt;
-  margin: 0 0 24px;
+  margin: 0 0 22px;
   letter-spacing: 0.04em;
   line-height: 1.25;
 }
@@ -84,12 +86,12 @@ table.hdr .meta-pag {
 .fecha-doc {
   text-align: right;
   font-size: 11pt;
-  margin: 0 0 26px;
+  margin: 0 0 24px;
   line-height: 1.4;
 }
 /* —— Destinatario (líneas juntas entre sí; bloque separado del resto) —— */
 .dest-block {
-  margin: 0 0 26px;
+  margin: 0 0 22px;
 }
 .dest-block p {
   margin: 0;
@@ -105,7 +107,7 @@ table.hdr .meta-pag {
 /* —— Cuerpo —— */
 .just { text-align: justify; }
 .cuerpo-principal {
-  margin: 0 0 32px;
+  margin: 0 0 26px;
   font-size: 11pt;
   line-height: 1.58;
   text-align: justify;
@@ -120,21 +122,21 @@ table.hdr .meta-pag {
 }
 /* —— Campos: ~1,5 interlineado entre líneas; más aire antes del primer campo —— */
 .campo-line {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-size: 11pt;
   line-height: 1.48;
   text-align: left;
 }
 .campo-line.primera {
   margin-top: 0;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .campo-line.ultima {
   margin-bottom: 0;
 }
 /* Firma: raya corta (como plantilla ITVO, ~ancho de la etiqueta “Nombre:”) */
 .firma-linea-wrap {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   font-size: 11pt;
   line-height: 1.48;
   text-align: left;
@@ -146,7 +148,7 @@ table.hdr .meta-pag {
   display: inline-block;
   margin-left: 5px;
   /* Raya corta como en la plantilla (no a todo el ancho de página) */
-  width: 8.5em;
+  width: 8.8em;
   min-width: 6.5em;
   border-bottom: 1px solid #000;
   height: 1.15em;
@@ -156,7 +158,7 @@ table.hdr .meta-pag {
 .relleno-pie {
   flex: 1 1 auto;
   /* Si el motor no expande flex, conserva hueco visible antes del pie */
-  min-height: 52mm;
+  min-height: 56mm;
   width: 100%;
   font-size: 0;
   line-height: 0;
@@ -170,9 +172,10 @@ table.hdr .meta-pag {
 }
 .pie {
   width: 100%;
-  font-size: 7.5pt;
+  font-size: 10pt;
   border-collapse: collapse;
   color: #000;
+  font-family: "Montserrat Medium", "Montserrat", Arial, Helvetica, sans-serif;
 }
 .pie td {
   vertical-align: bottom;
@@ -181,10 +184,16 @@ table.hdr .meta-pag {
 }
 .pie .c {
   text-align: center;
+  white-space: nowrap;
 }
 .pie .r {
   text-align: right;
   white-space: nowrap;
+}
+.pie .pie-codigo,
+.pie .pie-rev {
+  font-family: Calibri, Arial, Helvetica, sans-serif;
+  font-size: 8pt;
 }
 </style>
 </head>
@@ -238,9 +247,9 @@ table.hdr .meta-pag {
 <div class="pie-wrap">
 <table class="pie" role="presentation">
   <tr>
-    <td style="width:22%">ITVO-AC-PR-05-02</td>
+    <td class="pie-codigo" style="width:18%">ITVO-AC-PR-05-02</td>
     <td class="c">Toda copia en PAPEL es un &quot;Documento No Controlado&quot; a excepción del original.</td>
-    <td class="r" style="width:12%">Rev. 2</td>
+    <td class="r pie-rev" style="width:10%">Rev. 2</td>
   </tr>
 </table>
 </div>
